@@ -1,4 +1,4 @@
-# Yet Another Music Language
+# Yet Another Music DSL
 
 Another?
 
@@ -7,7 +7,7 @@ I at least know of [this better language](https://github.com/alda-lang/alda).
 This is inspired by a [Haskell video](https://youtu.be/FYTZkE5BZ-0) whose results I wanted to
 make portable and somewhat reproducible. You can see [my work here](https://hemangandhi.github.io/music-lang-js/).
 
-Now I ramble on about theory -- type and something about sine waves (that I swear isn't _music_ theory).
+Now I ramble on about theory -- programming language theory and something about sine waves (that I swear isn't _music_ theory).
 
 ## The Structure of a Note
 
@@ -80,6 +80,8 @@ Code-related:
 
 - Why does the evaluator try to apply the outermost value? Make it don't.
 - Clean up the website a little bit: get a default width textbox and rearrange.
+- Divide the code up into "modules" -- some for parsing and some for the note effects
+- Better parser so that strings can exist and include spaces.
 
 Musical features:
 
@@ -90,7 +92,12 @@ Language features:
 
 - Functions and variables understood.
 - I want a notion of key-less melody that can later be played in a given key.
+- Decide how to have a "top-level"
 
 UI features:
 
 - Drag-n-drop interface? (Ouch my funny bone.)
+
+Docs:
+
+- All a set of pre-loadable examples somehow

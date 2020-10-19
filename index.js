@@ -1,8 +1,6 @@
-const audio_ctx = new AudioContext();
-
 function Error(msg) {
     this.apply = function (args) {
-        return new Error("Calling uncallable 'error'");
+        return new Error("Calling uncallable 'error':" + this.message);
     }
     this.type = "Error";
     this.message = msg;
@@ -20,16 +18,17 @@ function Callable(delegate) {
     this.type = "Callable";
 }
 
-function PureNote(freq_of_t, duration) {
+function PureNote(freq_of_t, duration, ampl_of_t) {
     this.apply = function(args) {
         return new Error("Value of type PureNote is uncallable");
     }
     this.type = "PureNote";
     this.freq_of_t = freq_of_t;
+    this.ampl_of_t = ampl_of_t || (function (t) {return 0.1; });
     this.duration = duration;
 }
 
-function tryNoteToWave(note) {
+function tryNoteToWave(note, audio_ctx) {
     if (!Object.prototype.hasOwnProperty.call(note, 'freq_of_t')) {
         return false;
     }
@@ -40,21 +39,37 @@ function tryNoteToWave(note) {
     const buf_size = audio_ctx.sampleRate * note.duration;
     let pulses = new Array(buf_size);
     for (let i = 0; i < buf_size; i++) {
-        pulses[i] = Math.sin(i / audio_ctx.sampleRate * 2 * Math.PI * note.freq_of_t(i / audio_ctx.sampleRate));
+	let freqs = note.freq_of_t(i / audio_ctx.sampleRate);
+	pulses[i] = 0;
+	for(let j = 0; j < freqs.length; j++) {
+            pulses[i] += Math.sin(i / audio_ctx.sampleRate * 2 * Math.PI * freqs[j]) / freqs.length;
+	}
+        if(Object.prototype.hasOwnProperty.call(note, 'ampl_of_t')) {
+            pulses[i] *= note.ampl_of_t(i / audio_ctx.sampleRate);
+	}
     }
     return {
         buffer: pulses,
-	duration: note.duration
+	duration: note.duration,
+	type: "Wave"
     };
+}
+
+function getNoteInSeq(notes, t) {
+    let start = 0, i = 0;
+    for(; i < notes.length && t < start + notes[i].duration;
+	start += notes[i++].duration);
+    return i;
 }
 
 const global_variables = {
     "play": new Callable(function (args) {
 	let total_buffer = [];
 	let total_time = 0;
+        const audio_ctx = new AudioContext();
 	for(let i = 0; i < args.length; i++) {
 	    let arg = args[i];
-            let wave = tryNoteToWave(arg);
+            let wave = tryNoteToWave(arg, audio_ctx);
 	    if (!wave) return new Error("Arg " + i + " is not a note");
 	    total_buffer = total_buffer.concat(wave.buffer);
 	    total_time += wave.duration;
@@ -63,25 +78,81 @@ const global_variables = {
 	let snd_buffer = audio_ctx.createBuffer(1, buf_size, audio_ctx.sampleRate);
 	let b = snd_buffer.getChannelData(0);
 	for (let i = 0; i < buf_size; i++) b[i] = total_buffer[i];
-	let source = audio_ctx.createBufferSource();
-        source.buffer = snd_buffer;
-        source.connect(audio_ctx.destination);
-        source.start();
-        source.stop(total_time);
+	audio_ctx.resume().then(function () {
+	    console.log("should play? ctx is " + audio_ctx.state);
+	    let source = audio_ctx.createBufferSource();
+            source.buffer = snd_buffer;
+            source.connect(audio_ctx.destination);
+            source.start();
+            source.stop(total_time);
+	});
 	return new Result();
     }),
     "note": new Callable(function (args) {
-	if (args.length != 2) return new Error("note needs 2 arguments, not the " + args.length + " provided");
+	if (args.length != 2)
+	    return new Error("note needs 2 arguments, not the " + args.length + " provided");
 	let freq_val = parseFloat(args[0]);
 	let dur_val = parseFloat(args[1]);
 	if (freq_val === NaN || dur_val === NaN)
 	    return new Error("Frequency and duration need be floats");
-        let freq_fn = function(t) { return freq_val; };
+	if (dur_val <= 0) return new Error("Duration must be positive");
+        let freq_fn = function(t) { return [freq_val]; };
 	return new PureNote(freq_fn, dur_val);
     }),
+    "chord": new Callable(function (args) {
+	let longest = 0;
+        if(args.some(function(arg) {
+	    if((typeof arg.duration) != 'number') {
+		return true;
+	    } else if((typeof arg.freq_of_t != 'function') || (typeof arg.ampl_of_t != 'function')) {
+                return true;
+	    }
+	    longest = Math.max(longest, arg.duration);
+	    return false;
+	})) {
+            return new Error("All arguments to chords must have a duration (being a note)");
+	}
+	return new PureNote(function(t) {
+	    let acc = [];
+            for(let i = 0; i < args.length; i++) {
+                if (t > args[i].duration) continue;
+		let curr = args[i].freq_of_t(t);
+		if (Array.isArray(curr)) {
+                    acc = acc.concat(curr);
+		} else acc.push(curr);;
+	    }
+	    return acc;
+	}, longest, function(t) {
+            return args
+		.map(function (arg) { return arg.ampl_of_t(t);})
+		.reduce(function(acc, arg) { return acc + arg / args.length }, 0);
+	});
+    }),
+    "note-seq": new Callable(function (args) {
+	let duration = 0;
+        if(args.some(function(arg) {
+	    if((typeof arg.duration) != 'number') {
+		return true;
+	    } else if((typeof arg.freq_of_t != 'function') || (typeof arg.ampl_of_t != 'function')) {
+                return true;
+	    }
+	    duration += arg.duration;
+	    return false;
+	})) {
+            return new Error("All arguments to chords must have a duration (being a note)");
+	}
+	return new PureNote(function(t) {
+            return args[getNoteInSeq(args, t)].freq_of_t(t);
+	}, duration, function(t) {
+            return args[getNoteInSeq(args, t)].ampl_of_t(t);
+	});
+	
+    }),
     "pitch-at": new Callable(function (args) {
-	if (args.length != 2) return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided");
-	if ((typeof args[0]) != "string" || (args[0].length != 1 && args[0].length != 2)) return new Error("Invalid tone " + args[0]);
+	if (args.length != 2)
+	    return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided");
+	if ((typeof args[0]) != "string" || (args[0].length != 1 && args[0].length != 2))
+	    return new Error("Invalid tone " + args[0]);
 	let tone = args[0];
 	if (tone[0] < 'A' || tone[0] > 'G') return new Error("Tone out of range: " + args[0]);
 	if (tone.length === 2 && tone[1] != 'b' && tone[1] != '#') return new Error("Tone out of range: " + args[0]);
