@@ -3,15 +3,35 @@
   <head>
     <script src="index.js"></script>
     <title>Music Lang</title>
+
+    <style>
+      body {
+	  display: flex;
+	  flex-flow: row wrap;
+      }
+
+      #docs-container, th, td {
+	  border: 1px solid black;
+      }
+    </style>
   </head>
   <body>
-    <textarea id="src-txt-area" cols="80" rows="80"></textarea>
-    <div id="err-out-area"></div>
-    <button onclick="runMusic('src-txt-area', 'err-out-area')">Play!</button>
-    <div>
-      Yet another language about music. Check out
-      <a href="https://hemangandhi.github.io/music-lang-js/">the underlying Github</a>
-      so you can complain.
+    <div id="editor">
+      <textarea id="src-txt-area" cols="80" rows="80"></textarea>
+      <div id="err-out-area"></div>
+      <button onclick="runMusic('src-txt-area', 'err-out-area')">Play!</button>
+      <div>
+	Yet another language about music. Check out
+	<a href="https://hemangandhi.github.io/music-lang-js/">the underlying Github</a>
+	so you can complain.
+      </div>
+    </div>
+
+    <div id="docs">
+      <table id="docs-container"></table>
+      <script>
+	makeDocsTable("docs-container", "src-txt-area");
+      </script>
     </div>
   </body>
 </html>

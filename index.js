@@ -13,9 +13,12 @@ function Result() {
     this.type = "Result";
 }
 
-function Callable(delegate) {
+function Callable(delegate, docs, snippet, targets) {
     this.apply = delegate;
     this.type = "Callable";
+    this.docs = docs;
+    this.snippet = snippet;
+    this.snippets_targets = targets;
 }
 
 function PureNote(freq_of_t, duration, ampl_of_t) {
@@ -24,7 +27,7 @@ function PureNote(freq_of_t, duration, ampl_of_t) {
     }
     this.type = "PureNote";
     this.freq_of_t = freq_of_t;
-    this.ampl_of_t = ampl_of_t || (function (t) {return 0.1; });
+    this.ampl_of_t = ampl_of_t || (function (t) {return 0.3; });
     this.duration = duration;
 }
 
@@ -57,9 +60,9 @@ function tryNoteToWave(note, audio_ctx) {
 
 function getNoteInSeq(notes, t) {
     let start = 0, i = 0;
-    for(; i < notes.length && t < start + notes[i].duration;
+    for(; i < notes.length && t > start + notes[i].duration;
 	start += notes[i++].duration);
-    return i;
+    return [i, start];
 }
 
 const global_variables = {
@@ -87,7 +90,7 @@ const global_variables = {
             source.stop(total_time);
 	});
 	return new Result();
-    }),
+    }, "Plays a sequence of notes", "(play [notes...])"),
     "note": new Callable(function (args) {
 	if (args.length != 2)
 	    return new Error("note needs 2 arguments, not the " + args.length + " provided");
@@ -98,7 +101,7 @@ const global_variables = {
 	if (dur_val <= 0) return new Error("Duration must be positive");
         let freq_fn = function(t) { return [freq_val]; };
 	return new PureNote(freq_fn, dur_val);
-    }),
+    }, "Creates a note at a given frequency for a given duration", "(note [frequency] [duration])", ["note", "notes"]),
     "chord": new Callable(function (args) {
 	let longest = 0;
         if(args.some(function(arg) {
@@ -127,7 +130,7 @@ const global_variables = {
 		.map(function (arg) { return arg.ampl_of_t(t);})
 		.reduce(function(acc, arg) { return acc + arg / args.length }, 0);
 	});
-    }),
+    }, "Creates a chord of given notes (plays them in tandem)", "(chord notes...)", ["note", "notes"]),
     "note-seq": new Callable(function (args) {
 	let duration = 0;
         if(args.some(function(arg) {
@@ -142,12 +145,15 @@ const global_variables = {
             return new Error("All arguments to chords must have a duration (being a note)");
 	}
 	return new PureNote(function(t) {
-            return args[getNoteInSeq(args, t)].freq_of_t(t);
+	    let got_note = getNoteInSeq(args, t);
+	    if (got_note[0] >= args.length) return 0;
+            return args[got_note[0]].freq_of_t(t - got_note[1]);
 	}, duration, function(t) {
-            return args[getNoteInSeq(args, t)].ampl_of_t(t);
+	    let got_note = getNoteInSeq(args, t);
+	    if (got_note[0] >= args.length) return 0;
+            return args[got_note[0]].ampl_of_t(t - got_note[1]);
 	});
-	
-    }),
+    }, "Creates a sequence of notes but does not play them", "(note-seq notes...)", ["notes"]),
     "pitch-at": new Callable(function (args) {
 	if (args.length != 2)
 	    return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided");
@@ -166,7 +172,7 @@ const global_variables = {
 	    else tone_num++;
 	}
 	return 440 * Math.pow(2, tone_num / 12.0 + octave - 4);
-    }),
+    }, "Gets the pitch for a given note. The notes are letters from A through G with # for sharps and b for flats (since key signatures are not used double flats, double sharps, or \"naturals\". An octave must be specified, with  <code>(pitch-at C 3)</code> being middle C", "(pitch-at note octave)", ["frequency"]),
     "error": new Callable(function (args) {
         if (args.length != 1) return new Error("Error only takes one argument (did you put spaces in the message?)");
 	return new Error(args[0]);
@@ -228,4 +234,56 @@ function runMusic(textarea_id, err_out_id) {
     if (evaled && evaled.type === "Error") {
         document.getElementById(err_out_id).innerText = evaled.message;
     }
+}
+
+function makeDocsTable(table_id, txt_box_id) {
+    let table = document.getElementById(table_id);
+
+    let header = document.createElement("tr");
+    let col1 = document.createElement("th");
+    col1.appendChild(document.createTextNode("Function name (click to add to your code)"));
+    header.appendChild(col1);
+    let col2 = document.createElement("th");
+    col2.appendChild(document.createTextNode("Function docs"));
+    header.appendChild(col2);
+    table.appendChild(header);
+
+    Object.keys(global_variables).forEach(function (global_var) {
+	let global = global_variables[global_var];
+        if (!global.docs) return;
+	let row = document.createElement("tr");
+	let fn = document.createElement("td");
+	fn.appendChild(document.createTextNode(global_var));
+	if (global.snippet) {
+	    fn.addEventListener("click", function(event) {
+		let text = document.getElementById(txt_box_id).value;
+		if (!text) {
+		    document.getElementById(txt_box_id).value = global.snippet;
+		    return;
+		} else if (!global.snippets_targets) return;
+		let found_snippet = global.snippets_targets.map(function(snippet) {
+		    return [snippet, text.indexOf("[" + snippet + "]")];
+		}).filter(function(i) { return i[1] >= 0; });
+		console.log(found_snippet);
+		if (!found_snippet) {
+		    let snippet = found_snippet[0][0];
+		    document.getElementById(txt_box_id).value = text.replace("[" + snippet + "]", global.snippet);
+		    return;
+		}
+		found_snippet = global.snippets_targets.map(function(snippet) {
+		    return [snippet, text.indexOf("[" + snippet + "...]")];
+		}).filter(function(i) { return i[1] >= 0; });
+		if (found_snippet) {
+		    let snippet = found_snippet[0][0];
+		    document.getElementById(txt_box_id).value = text.replace("[" + snippet + "...]", global.snippet + " [" + snippet + "...]");
+		}
+	    });
+	} // if
+
+	let docs = document.createElement("td");
+	docs.appendChild(document.createTextNode(global.docs));
+	row.appendChild(fn);
+	row.appendChild(docs);
+	table.appendChild(row);
+    });
 }
