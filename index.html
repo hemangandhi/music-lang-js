@@ -42,8 +42,17 @@
     </div>
 
     <div id="docs">
+      <div>Here's a quick how-to for using this site:</div>
+      <ol>
+	<li>Click on any of the function snippets in the table below to add them. (You'll see an error under the "Format Code" button if that fails.)</li>
+	<li>If you're getting confused by what the code is, try formatting it by clicking on the "Format Code button".</li>
+	<li>When you're ready to try to play the piece, check the "Remove [hints]" box and format the code -- just to be sure it's neat and correct.</li>
+	<li>Press play!</li>
+      </ol>
       <table id="docs-container"></table>
-      <button onclick="formatCode('src-txt-area', 'snippets-errors')">Format Code</button>
+      <input type="checkbox" id="format-rm-hints"></input>
+      <label for="format-rm-hints">Remove <code>[hints]</code></label>
+      <button onclick="formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints')">Format Code</button>
       <div id="snippets-errors"></div>
       <script>
 	makeDocsTable("docs-container", "src-txt-area", "snippets-errors");
