@@ -130,7 +130,7 @@ const global_variables = {
 		.map(function (arg) { return arg.ampl_of_t(t);})
 		.reduce(function(acc, arg) { return acc + arg / args.length }, 0);
 	});
-    }, "Creates a chord of given notes (plays them in tandem)", "(chord notes...)", ["note", "notes"]),
+    }, "Creates a chord of given notes (plays them in tandem)", "(chord [notes...])", ["note", "notes"]),
     "note-seq": new Callable(function (args) {
 	let duration = 0;
         if(args.some(function(arg) {
@@ -153,7 +153,7 @@ const global_variables = {
 	    if (got_note[0] >= args.length) return 0;
             return args[got_note[0]].ampl_of_t(t - got_note[1]);
 	});
-    }, "Creates a sequence of notes but does not play them", "(note-seq notes...)", ["notes"]),
+    }, "Creates a sequence of notes but does not play them", "(note-seq [notes...])", ["notes"]),
     "pitch-at": new Callable(function (args) {
 	if (args.length != 2)
 	    return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided");
@@ -172,7 +172,7 @@ const global_variables = {
 	    else tone_num++;
 	}
 	return 440 * Math.pow(2, tone_num / 12.0 + octave - 4);
-    }, "Gets the pitch for a given note. The notes are letters from A through G with # for sharps and b for flats (since key signatures are not used double flats, double sharps, or \"naturals\". An octave must be specified, with  <code>(pitch-at C 3)</code> being middle C", "(pitch-at note octave)", ["frequency"]),
+    }, "Gets the pitch for a given note. The tones are letters from A through G with # for sharps and b for flats (since key signatures are not used double flats, double sharps, or \"naturals\". An octave must be specified, with (pitch-at C 3) being middle C", "(pitch-at [tone] [octave])", ["frequency"]),
     "error": new Callable(function (args) {
         if (args.length != 1) return new Error("Error only takes one argument (did you put spaces in the message?)");
 	return new Error(args[0]);
@@ -220,6 +220,9 @@ function parseMusic(music_code) {
             array_stack[array_stack.length - 1].push(tokens[i]);
 	}
     }
+    // there's an off by one in the initialization logic if the code starts with
+    // a paren
+    if (music_code[0] === "(") parsed = parsed[0];
     return [parsed, (array_stack.length == 1)? "": "mismatched parens -- extra ("];
 }
 
@@ -236,9 +239,10 @@ function runMusic(textarea_id, err_out_id) {
     }
 }
 
-function makeDocsTable(table_id, txt_box_id) {
+function makeDocsTable(table_id, txt_box_id, err_id) {
     let table = document.getElementById(table_id);
 
+    // title
     let header = document.createElement("tr");
     let col1 = document.createElement("th");
     col1.appendChild(document.createTextNode("Function name (click to add to your code)"));
@@ -248,24 +252,30 @@ function makeDocsTable(table_id, txt_box_id) {
     header.appendChild(col2);
     table.appendChild(header);
 
+    // each row
     Object.keys(global_variables).forEach(function (global_var) {
 	let global = global_variables[global_var];
         if (!global.docs) return;
 	let row = document.createElement("tr");
 	let fn = document.createElement("td");
 	fn.appendChild(document.createTextNode(global_var));
+	fn.classList.add("func-name");
 	if (global.snippet) {
 	    fn.addEventListener("click", function(event) {
 		let text = document.getElementById(txt_box_id).value;
-		if (!text) {
+		if (!text && !global.snippets_targets) {
 		    document.getElementById(txt_box_id).value = global.snippet;
 		    return;
-		} else if (!global.snippets_targets) return;
+		} else if (!global.snippets_targets) {
+		    document.getElementById(err_id).innerText = "Can't add more than one top-level definition";
+		    return;
+		}
+
 		let found_snippet = global.snippets_targets.map(function(snippet) {
 		    return [snippet, text.indexOf("[" + snippet + "]")];
 		}).filter(function(i) { return i[1] >= 0; });
 		console.log(found_snippet);
-		if (!found_snippet) {
+		if (found_snippet.length > 0) {
 		    let snippet = found_snippet[0][0];
 		    document.getElementById(txt_box_id).value = text.replace("[" + snippet + "]", global.snippet);
 		    return;
@@ -273,17 +283,56 @@ function makeDocsTable(table_id, txt_box_id) {
 		found_snippet = global.snippets_targets.map(function(snippet) {
 		    return [snippet, text.indexOf("[" + snippet + "...]")];
 		}).filter(function(i) { return i[1] >= 0; });
-		if (found_snippet) {
+		if (found_snippet.length > 0) {
 		    let snippet = found_snippet[0][0];
 		    document.getElementById(txt_box_id).value = text.replace("[" + snippet + "...]", global.snippet + " [" + snippet + "...]");
+		} else {
+		    document.getElementById(err_id).innerText = "Can't find a proper place to insert the snippet, hints such as [" + global.snippets_targets + "] required (add ellipsis for mulitple arguments with the same hint).";
 		}
 	    });
 	} // if
 
+        //add that row to the table
 	let docs = document.createElement("td");
 	docs.appendChild(document.createTextNode(global.docs));
 	row.appendChild(fn);
 	row.appendChild(docs);
 	table.appendChild(row);
     });
+}
+
+// Implements "emacs style lisp indentation".
+// See https://wiki.c2.com/?LispIndentation for more.
+function formatCode(textarea_id, err_id) {
+    function indentTreeLevel(level, indentation) {
+	let res = "";
+	for(let i = 0; i < indentation; i++) { res += " "; }
+	if (!Array.isArray(level)) {
+	    return res + level;
+	} else if (level.some(function(x) { return Array.isArray(x);})) {
+	    if (Array.isArray(level[0])) {
+		res += "(" + indentTreeLevel(level[0], indentation) + ")\n";
+	    } else {
+		res += "(" + level[0] + "\n";
+	    }
+	    res += level.slice(1).map(function(arg) {
+		return indentTreeLevel(arg, indentation + 2);
+	    }).join("\n");
+	    return res + ")";
+	} else {
+	    return res + "(" + level.join(" ") + ")";
+	}
+    }
+    
+    let code = document.getElementById(textarea_id).value;
+    // let's not care about what the user did
+    let parsed_and_err = parseMusic(code);
+    if (parsed_and_err[1]) {
+	document.getElementById(err_id).innerText = parsed_and_err[1];
+	return;
+    }
+
+    let parsed = parsed_and_err[0];
+    let formatted = indentTreeLevel(parsed, 0);
+    document.getElementById(textarea_id).value = formatted;
 }

@@ -6,6 +6,7 @@
 
     <style>
       body {
+	  width: 100%;
 	  display: flex;
 	  flex-flow: row wrap;
       }
@@ -13,24 +14,39 @@
       #docs-container, th, td {
 	  border: 1px solid black;
       }
+
+      #docs {
+          flex-grow: 1;
+	  max-width: 550px;
+      }
+
+      .func-name:hover {
+          background-color: yellow;
+      }
     </style>
   </head>
   <body>
     <div id="editor">
-      <textarea id="src-txt-area" cols="80" rows="80"></textarea>
+      <div>
+	NOTE: if your screen is less than 1000px wide this might be ugly.
+	<a href="https://github.com/hemangandhi/music-lang-js/issues/new">Hit me up</a> if you want it fixed.
+      </div>
+      <textarea id="src-txt-area" cols="80" rows="40"></textarea>
       <div id="err-out-area"></div>
       <button onclick="runMusic('src-txt-area', 'err-out-area')">Play!</button>
       <div>
 	Yet another language about music. Check out
-	<a href="https://hemangandhi.github.io/music-lang-js/">the underlying Github</a>
+	<a href="https://github.com/hemangandhi/music-lang-js">the underlying Github</a>
 	so you can complain.
       </div>
     </div>
 
     <div id="docs">
       <table id="docs-container"></table>
+      <button onclick="formatCode('src-txt-area', 'snippets-errors')">Format Code</button>
+      <div id="snippets-errors"></div>
       <script>
-	makeDocsTable("docs-container", "src-txt-area");
+	makeDocsTable("docs-container", "src-txt-area", "snippets-errors");
       </script>
     </div>
   </body>
