@@ -27,28 +27,34 @@ function PureNote(freq_of_t, duration, ampl_of_t) {
     }
     this.type = "PureNote";
     this.freq_of_t = freq_of_t;
-    this.ampl_of_t = ampl_of_t || (function (t) {return 0.3; });
+    this.ampl_of_t = ampl_of_t || (function (t) {return [0.3]; });
     this.duration = duration;
 }
 
+function isNote(arg) {
+    if((typeof arg.duration) != 'number') {
+	return false;
+    } else if((typeof arg.freq_of_t != 'function') || (typeof arg.ampl_of_t != 'function')) {
+        return false;
+    }
+    return true;
+}
+
 function tryNoteToWave(note, audio_ctx) {
-    if (!Object.prototype.hasOwnProperty.call(note, 'freq_of_t')) {
-        return false;
-    }
-    if (!Object.prototype.hasOwnProperty.call(note, 'duration')) {
-        return false;
-    }
+    if(!isNote(note)) return false;
 
     const buf_size = audio_ctx.sampleRate * note.duration;
     let pulses = new Array(buf_size);
     for (let i = 0; i < buf_size; i++) {
 	let freqs = note.freq_of_t(i / audio_ctx.sampleRate);
+	let ampls = []
+        if(Object.prototype.hasOwnProperty.call(note, 'ampl_of_t')) {
+            ampls = note.ampl_of_t(i / audio_ctx.sampleRate);
+	}
 	pulses[i] = 0;
 	for(let j = 0; j < freqs.length; j++) {
-            pulses[i] += Math.sin(i / audio_ctx.sampleRate * 2 * Math.PI * freqs[j]) / freqs.length;
-	}
-        if(Object.prototype.hasOwnProperty.call(note, 'ampl_of_t')) {
-            pulses[i] *= note.ampl_of_t(i / audio_ctx.sampleRate);
+	    let ampl = (j < ampls.length)  ? ampls[j]: 1;
+            pulses[i] += ampl * Math.sin(i / audio_ctx.sampleRate * 2 * Math.PI * freqs[j]) / freqs.length;
 	}
     }
     return {
@@ -105,11 +111,7 @@ const global_variables = {
     "chord": new Callable(function (args) {
 	let longest = 0;
         if(args.some(function(arg) {
-	    if((typeof arg.duration) != 'number') {
-		return true;
-	    } else if((typeof arg.freq_of_t != 'function') || (typeof arg.ampl_of_t != 'function')) {
-                return true;
-	    }
+	    if (!isNote(arg)) return true;
 	    longest = Math.max(longest, arg.duration);
 	    return false;
 	})) {
@@ -134,11 +136,7 @@ const global_variables = {
     "note-seq": new Callable(function (args) {
 	let duration = 0;
         if(args.some(function(arg) {
-	    if((typeof arg.duration) != 'number') {
-		return true;
-	    } else if((typeof arg.freq_of_t != 'function') || (typeof arg.ampl_of_t != 'function')) {
-                return true;
-	    }
+	    if(!isNote(arg)) return true;
 	    duration += arg.duration;
 	    return false;
 	})) {
@@ -176,7 +174,40 @@ const global_variables = {
     "error": new Callable(function (args) {
         if (args.length != 1) return new Error("Error only takes one argument (did you put spaces in the message?)");
 	return new Error(args[0]);
-    })
+    }),
+    "with-adsr": new Callable(function (args) {
+	if (args.length != 6) {
+	    return new Error("with-adsr takes 6 args, not the provided " + args.length);
+	}
+	let floats = args.slice(0, 5).map(parseFloat);
+	if (floats.some(function(f) { return f === NaN || f < 0;})) {
+	    return new Error("The first 5 arguments must be floats between 0 and 1, not the " + JSON.stringify(args.slice(0, 5)) + " provided.");
+	}
+	let [a_vol, d_start, s_start, s_vol, r_start] = floats;
+	if (d_start >= s_start || s_start >= r_start) {
+	    return new Error("Start times must be increasing, " + [d_start, s_start, r_start] + " provided.");
+	}
+	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringfy(args[5]));
+
+	let note = args[5];
+	return new PureNote(note.freq_of_t, note.duration, function(t) {
+	    let ratio = t/note.duration;
+	    let scaling = 1;
+	    if (ratio < d_start) {
+		scaling = ratio * a_vol / d_start;
+	    } else if (ratio < s_start) {
+		let slope = (s_vol - a_vol) / (s_start - d_start);
+		scaling = slope * (ratio - d_start) + a_vol;
+	    } else if (ratio < r_start) {
+		scaling = s_vol;
+	    } else {
+		let slope = s_vol / (r_start - 1);
+		scaling = slope * (ratio - r_start) + s_vol;
+	    }
+	    return note.ampl_of_t(t).map(function(a) { return a * scaling; });
+	});
+    }, "Wraps a note in an ADSR envelope. The timings are represented relative to the duration of the note and volume scaling the volume of the note",
+    "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])", ["note", "notes"])
 };
 
 function evalParsedMusic(parsed_music, variables) {
