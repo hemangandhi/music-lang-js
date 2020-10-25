@@ -72,6 +72,20 @@ The language is a Lisp. However, there are a few undecided questions:
   would a function like `play-with-envelope` make sense? Would there be any logic to
   manage if notes provide their own?
 
+### The UI -- Interactive Coding
+
+I have no eyes when it comes to UI. But I try. The site has a textarea for the code and a table which each function documented. The documentation
+and interaction system is baked into the language so far. This section is an explanation of this documentation and interactive coding system.
+
+The interactive system started by adding a docstring field to the built-in functions and allowing the automatic creation of a table of functions
+(that appears to the right of the textarea, hopefully). These docstrings lead to a pattern: all the functions seem easier to understand with a
+snippet of code, with arguments annotated with a hint in square brackets (yay, I don't use them elsewhere).
+
+This culminated with a system for inserting code snippets (since it looked difficult to get the cursor position from a textarea). Each function
+(except `play`) also may list the set of hints where a function call would provide the required argument.
+
+To make this legible, instead of just a lengthy one-line string, a formatting button helps out. This can also remove hints for the variadic functions.
+
 ## TODOs
 
 If you've read up to here you probably have a bone to pick. Here's the skeleton I'm working with:
@@ -93,10 +107,6 @@ Language features:
 - Functions and variables understood.
 - I want a notion of key-less melody that can later be played in a given key.
 - Decide how to have a "top-level"
-
-UI features:
-
-- Drag-n-drop interface? (Ouch my funny bone.)
 
 Docs:
 
