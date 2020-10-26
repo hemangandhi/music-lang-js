@@ -39,6 +39,14 @@ function PureNote(freq_of_t, duration, ampl_of_t) {
     this.duration = duration;
 }
 
+function List(values) {
+    this.apply = function(args) {
+        return new Error("Value of type List is uncallable");
+    }
+    this.values = values;
+    this.type = "List";
+}
+
 function evalParsedMusic(parsed_music, variables) {
     if (!Array.isArray(parsed_music)) {
         return variables[parsed_music] || parsed_music;

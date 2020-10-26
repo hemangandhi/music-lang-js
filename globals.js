@@ -1,3 +1,16 @@
+function flattenMusicLangListsIn(list_of_lists) {
+    let rv = [];
+    for (let i = 0; i < list_of_lists.length; i++) {
+	let list = list_of_lists[i];
+	if (list.type === "List") {
+	    rv = rv.concat(list.values);
+	} else {
+	    rv.push(list);
+	}
+    }
+    return rv;
+}
+
 function isNote(arg) {
     if((typeof arg.duration) != 'number') {
 	return false;
@@ -10,7 +23,7 @@ function isNote(arg) {
 function tryNoteToWave(note, audio_ctx) {
     if(!isNote(note)) return false;
 
-    const buf_size = audio_ctx.sampleRate * note.duration;
+    const buf_size = Math.floor(audio_ctx.sampleRate * note.duration) + 1;
     let pulses = new Array(buf_size);
     for (let i = 0; i < buf_size; i++) {
 	let freqs = note.freq_of_t(i / audio_ctx.sampleRate);
@@ -40,6 +53,7 @@ function getNoteInSeq(notes, t) {
 
 const global_variables = {
     "play": new Callable(function (args) {
+	args = flattenMusicLangListsIn(args);
 	let total_buffer = [];
 	let total_time = 0;
         const audio_ctx = new AudioContext();
@@ -76,6 +90,7 @@ const global_variables = {
 	return new PureNote(freq_fn, dur_val);
     }, "Creates a note at a given frequency for a given duration", "(note [frequency] [duration])", ["note", "notes"]),
     "chord": new Callable(function (args) {
+	args = flattenMusicLangListsIn(args);
 	let longest = 0;
         if(args.some(function(arg) {
 	    if (!isNote(arg)) return true;
@@ -101,13 +116,16 @@ const global_variables = {
 	});
     }, "Creates a chord of given notes (plays them in tandem)", "(chord [notes...])", ["note", "notes"]),
     "note-seq": new Callable(function (args) {
+	args = flattenMusicLangListsIn(args);
 	let duration = 0;
         if(args.some(function(arg) {
-	    if(!isNote(arg)) return true;
+	    if(!isNote(arg)) {
+		return true;
+	    }
 	    duration += arg.duration;
 	    return false;
 	})) {
-            return new Error("All arguments to chords must have a duration (being a note)");
+            return new Error("All arguments to note-seq must have a duration (being a note)");
 	}
 	return new PureNote(function(t) {
 	    let got_note = getNoteInSeq(args, t);
@@ -154,7 +172,7 @@ const global_variables = {
 	if (d_start >= s_start || s_start >= r_start) {
 	    return new Error("Start times must be increasing, " + [d_start, s_start, r_start] + " provided.");
 	}
-	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringfy(args[5]));
+	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringify(args[5]));
 
 	let note = args[5];
 	return new PureNote(note.freq_of_t, note.duration, function(t) {
@@ -174,5 +192,31 @@ const global_variables = {
 	    return note.ampl_of_t(t).map(function(a) { return a * scaling; });
 	});
     }, "Wraps a note in an ADSR envelope. The timings are represented relative to the duration of the note and volume scaling the volume of the note",
-    "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])", ["note", "notes"])
+    "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])", ["note", "notes"]),
+    "fn": new SpecialForm(function (args) {
+	if (args.length != 2) return new Error("The fn special form requires 2 arguments, not the provided " + args.length);
+	if (!Array.isArray(args[1])) return new Error("Fn special form requires a list of arguments");
+	let snip = "(" + args[1][0] + args[1].slice(1).map(function(a) { return "[" + a + "]";}).join(" ") + ")";
+	let [params, body] = args;
+	let fn_name = params[0];
+	params = params.slice(1);
+	return new Callable(function (fn_args) {
+	    if (fn_args.length != params.length) {
+		return new Error("User defined function " + fn_name + " requires" + params.length + ", not the provided " + fn_args.length);
+	    }
+	    let new_globals = { ...global_variables };
+	    for (let i = 0; i < fn_args.length; i++) {
+		new_globals[params[i]] = fn_args[i];
+	    }
+	    return evalParsedMusic(body, new_globals);
+	}, "User defined function", snip, [])
+    }, "Defines a function.", "(fn ([name] [args...]) [body])", ["function"]),
+    "map": new Callable(function(args) {
+	let fn = args[0];
+	if (fn.type !== "Callable") return new Error("First argument should be a callable, not the provided " + args[0]);
+	return new List(args.slice(1).map(function(a) {
+	    let r = fn.apply([a]);
+	    return r;
+	}));
+    }, "Apply a function over each argument.", "(map [function] [stuff...])", [])
 };
