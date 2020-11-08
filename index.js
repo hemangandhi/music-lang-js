@@ -7,8 +7,18 @@ function runMusic(textarea_id, err_out_id) {
 	return;
     }
     let evaled = evalParsedMusic(parsed_and_error[0], global_variables);
+    let err_out = document.getElementById(err_out_id);
+    while(err_out.firstChild) err_out.removeChild(err_out.firstChild);
+
     if (evaled && evaled.type === "Error") {
-        document.getElementById(err_out_id).innerText = evaled.message;
+        err_out.appendChild(document.createTextNode(evaled.message));
+    	let stacktrace = document.createElement("ol");
+	evaled.stacktrace.forEach(function (lvl) {
+	    let lvl_node = document.createElement("li");
+            lvl_node.appendChild(document.createTextNode(lvl));
+	    stacktrace.appendChild(lvl_node);
+	});
+	err_out.appendChild(stacktrace);
     }
 }
 

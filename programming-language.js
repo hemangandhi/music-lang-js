@@ -1,9 +1,14 @@
-function Error(msg) {
+function Error(msg, trigger) {
     this.apply = function (args) {
         return new Error("Calling uncallable 'error':" + this.message);
     }
     this.type = "Error";
     this.message = msg;
+    if (trigger.type === "Error") {
+	this.stacktrace = ["Caused by '" + trigger.message + "'"].concat(trigger.stacktrace);
+    } else {
+	this.stacktrace = ["At " + trigger];
+    }
 }
 
 function Result() {

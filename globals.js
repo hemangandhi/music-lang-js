@@ -60,7 +60,7 @@ const global_variables = {
 	for(let i = 0; i < args.length; i++) {
 	    let arg = args[i];
             let wave = tryNoteToWave(arg, audio_ctx);
-	    if (!wave) return new Error("Arg " + i + " is not a note");
+	    if (!wave) return new Error("Arg " + i + " is not a note", arg);
 	    total_buffer = total_buffer.concat(wave.buffer);
 	    total_time += wave.duration;
 	}
@@ -80,12 +80,14 @@ const global_variables = {
     }, "Plays a sequence of notes", "(play [notes...])"),
     "note": new Callable(function (args) {
 	if (args.length != 2)
-	    return new Error("note needs 2 arguments, not the " + args.length + " provided");
+	    return new Error("note needs 2 arguments, not the " + args.length + " provided", args);
 	let freq_val = parseFloat(args[0]);
 	let dur_val = parseFloat(args[1]);
-	if (freq_val === NaN || dur_val === NaN)
-	    return new Error("Frequency and duration need be floats");
-	if (dur_val <= 0) return new Error("Duration must be positive");
+	if (isNaN(freq_val))
+	    return new Error("Frequency needs be floats", args[0]);
+	if (isNaN(dur_val))
+	    return new Error("Frequency needs be floats", args[1]);
+	if (dur_val <= 0) return new Error("Duration must be positive", args[1]);
         let freq_fn = function(t) { return [freq_val]; };
 	return new PureNote(freq_fn, dur_val);
     }, "Creates a note at a given frequency for a given duration", "(note [frequency] [duration])", ["note", "notes"]),
@@ -97,7 +99,7 @@ const global_variables = {
 	    longest = Math.max(longest, arg.duration);
 	    return false;
 	})) {
-            return new Error("All arguments to chords must have a duration (being a note)");
+            return new Error("All arguments to chords must have a duration (being a note)", args);
 	}
 	return new PureNote(function(t) {
 	    let acc = [];
@@ -125,7 +127,7 @@ const global_variables = {
 	    duration += arg.duration;
 	    return false;
 	})) {
-            return new Error("All arguments to note-seq must have a duration (being a note)");
+            return new Error("All arguments to note-seq must have a duration (being a note)", args);
 	}
 	return new PureNote(function(t) {
 	    let got_note = getNoteInSeq(args, t);
@@ -139,14 +141,14 @@ const global_variables = {
     }, "Creates a sequence of notes but does not play them", "(note-seq [notes...])", ["notes"]),
     "pitch-at": new Callable(function (args) {
 	if (args.length != 2)
-	    return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided");
+	    return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided", args);
 	if ((typeof args[0]) != "string" || (args[0].length != 1 && args[0].length != 2))
-	    return new Error("Invalid tone " + args[0]);
+	    return new Error("Invalid tone " + args[0], args[0]);
 	let tone = args[0];
-	if (tone[0] < 'A' || tone[0] > 'G') return new Error("Tone out of range: " + args[0]);
-	if (tone.length === 2 && tone[1] != 'b' && tone[1] != '#') return new Error("Tone out of range: " + args[0]);
+	if (tone[0] < 'A' || tone[0] > 'G') return new Error("Tone out of range: " + args[0], tone);
+	if (tone.length === 2 && tone[1] != 'b' && tone[1] != '#') return new Error("Tone out of range: " + args[0], tone);
 	let octave = parseFloat(args[1]);
-	if (octave == NaN) return new Error("Octave needs to be a number, not '" + args[1] + "'");
+	if (octave == NaN) return new Error("Octave needs to be a number, not '" + args[1] + "'", args[1]);
 	let tone_num = (tone.charCodeAt(0) - 'A'.charCodeAt(0)) * 2;
 	if (tone > 'B') tone_num--;
 	if (tone > 'E') tone_num--;
@@ -157,22 +159,22 @@ const global_variables = {
 	return 440 * Math.pow(2, tone_num / 12.0 + octave - 4);
     }, "Gets the pitch for a given note. The tones are letters from A through G with # for sharps and b for flats (since key signatures are not used double flats, double sharps, or \"naturals\". An octave must be specified, with (pitch-at C 3) being middle C", "(pitch-at [tone] [octave])", ["frequency"]),
     "error": new Callable(function (args) {
-        if (args.length != 1) return new Error("Error only takes one argument (did you put spaces in the message?)");
-	return new Error(args[0]);
+        if (args.length != 2) return new Error("Error only takes one argument (did you put spaces in the message?)", args);
+	return new Error(args[0], args[1]);
     }),
     "with-adsr": new Callable(function (args) {
 	if (args.length != 6) {
-	    return new Error("with-adsr takes 6 args, not the provided " + args.length);
+	    return new Error("with-adsr takes 6 args, not the provided " + args.length, args);
 	}
 	let floats = args.slice(0, 5).map(parseFloat);
 	if (floats.some(function(f) { return f === NaN || f < 0;})) {
-	    return new Error("The first 5 arguments must be floats between 0 and 1, not the " + JSON.stringify(args.slice(0, 5)) + " provided.");
+	    return new Error("The first 5 arguments must be floats between 0 and 1, not the " + JSON.stringify(args.slice(0, 5)) + " provided.", floats);
 	}
 	let [a_vol, d_start, s_start, s_vol, r_start] = floats;
 	if (d_start >= s_start || s_start >= r_start) {
-	    return new Error("Start times must be increasing, " + [d_start, s_start, r_start] + " provided.");
+	    return new Error("Start times must be increasing, " + [d_start, s_start, r_start] + " provided.", [d_start, s_start, r_start]);
 	}
-	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringify(args[5]));
+	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringify(args[5]), args[5]);
 
 	let note = args[5];
 	return new PureNote(note.freq_of_t, note.duration, function(t) {
@@ -194,15 +196,15 @@ const global_variables = {
     }, "Wraps a note in an ADSR envelope. The timings are represented relative to the duration of the note and volume scaling the volume of the note",
     "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])", ["note", "notes"]),
     "fn": new SpecialForm(function (args) {
-	if (args.length != 2) return new Error("The fn special form requires 2 arguments, not the provided " + args.length);
-	if (!Array.isArray(args[1])) return new Error("Fn special form requires a list of arguments");
+	if (args.length != 2) return new Error("The fn special form requires 2 arguments, not the provided " + args.length, args);
+	if (!Array.isArray(args[1])) return new Error("Fn special form requires a list of arguments", args[1]);
 	let snip = "(" + args[1][0] + args[1].slice(1).map(function(a) { return "[" + a + "]";}).join(" ") + ")";
 	let [params, body] = args;
 	let fn_name = params[0];
 	params = params.slice(1);
 	return new Callable(function (fn_args) {
 	    if (fn_args.length != params.length) {
-		return new Error("User defined function " + fn_name + " requires" + params.length + ", not the provided " + fn_args.length);
+		return new Error("User defined function " + fn_name + " requires" + params.length + ", not the provided " + fn_args.length, fn_args);
 	    }
 	    let new_globals = { ...global_variables };
 	    for (let i = 0; i < fn_args.length; i++) {
@@ -213,7 +215,7 @@ const global_variables = {
     }, "Defines a function.", "(fn ([name] [args...]) [body])", ["function"]),
     "map": new Callable(function(args) {
 	let fn = args[0];
-	if (fn.type !== "Callable") return new Error("First argument should be a callable, not the provided " + args[0]);
+	if (fn.type !== "Callable") return new Error("First argument should be a callable, not the provided " + args[0], args[0]);
 	return new List(args.slice(1).map(function(a) {
 	    let r = fn.apply([a]);
 	    return r;
