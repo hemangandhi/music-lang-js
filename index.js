@@ -52,6 +52,7 @@ function makeDocsTable(table_id, txt_box_id, err_id) {
 	fn.classList.add("func-name");
 	if (global.snippet) {
 	    fn.addEventListener("click", function(event) {
+		document.getElementById(err_id).innerText = "";
 		let text = document.getElementById(txt_box_id).value;
 		if (!text && !global.snippets_targets) {
 		    document.getElementById(txt_box_id).value = global.snippet;
@@ -143,4 +144,18 @@ function formatCode(textarea_id, err_id, rm_hints_checkbox_id) {
     if (rm_hints && found_hints_warnings.length > 0) {
 	document.getElementById(err_id).innerText = "Found unresolved hints: " + found_hints_warnings.join(", ");
     }
+}
+
+function loadDemos(selector_id, editor_txtarea_id) {
+    let selector = document.getElementById(selector_id);
+    for(demo in demos) {
+	let option = document.createElement('option');
+	option.innerText = demo;
+	option.value = demo.replaceAll(' ', '-');
+	selector.appendChild(option);
+    }
+    selector.addEventListener("change", function(evt) {
+	if (selector.value === "clear") return;
+	document.getElementById(editor_txtarea_id).value = demos[selector.value.replaceAll('-', ' ')];
+    });
 }

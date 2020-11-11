@@ -3,6 +3,7 @@
   <head>
     <script src="programming-language.js"></script>
     <script src="globals.js"></script>
+    <script src="demos.js"></script>
     <script src="index.js"></script>
     <title>Music Lang</title>
 
@@ -17,6 +18,11 @@
 	  border: 1px solid black;
       }
 
+      #editor {
+	  flex-grow: 1;
+	  max-width: 550px;
+      }
+
       #docs {
           flex-grow: 1;
 	  max-width: 550px;
@@ -27,6 +33,7 @@
       }
     </style>
   </head>
+
   <body>
     <div id="editor">
       <div>
@@ -40,6 +47,14 @@
 	Yet another language about music. Check out
 	<a href="https://github.com/hemangandhi/music-lang-js">the underlying Github</a>
 	so you can complain.
+      </div>
+      <div>
+	Here are some demos in the language. Click "save" to save the text in the text area above into a cookie
+	(this is the only use of cookies by this site) and add an option for it in the drop down menu.
+	<label for="demo-drop-down">Select a demo (including anything you may have saved)</label>
+	<select id="demo-drop-down">
+	  <option value="clear"></option>
+	</select>
       </div>
     </div>
 
@@ -56,9 +71,11 @@
       <label for="format-rm-hints">Remove <code>[hints]</code></label>
       <button onclick="formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints')">Format Code</button>
       <div id="snippets-errors"></div>
-      <script>
-	makeDocsTable("docs-container", "src-txt-area", "snippets-errors");
-      </script>
     </div>
+      
+    <script>
+      makeDocsTable("docs-container", "src-txt-area", "snippets-errors");
+      loadDemos("demo-drop-down", "src-txt-area");
+    </script>
   </body>
 </html>

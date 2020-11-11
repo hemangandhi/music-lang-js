@@ -75,6 +75,7 @@ const global_variables = {
             source.connect(audio_ctx.destination);
             source.start();
             source.stop(total_time);
+	    console.log("done playing. Time: " + total_time);
 	});
 	return new Result();
     }, "Plays a sequence of notes", "(play [notes...])"),
@@ -108,13 +109,19 @@ const global_variables = {
 		let curr = args[i].freq_of_t(t);
 		if (Array.isArray(curr)) {
                     acc = acc.concat(curr);
-		} else acc.push(curr);;
+		} else acc.push(curr);
 	    }
 	    return acc;
 	}, longest, function(t) {
-            return args
-		.map(function (arg) { return arg.ampl_of_t(t);})
-		.reduce(function(acc, arg) { return acc + arg / args.length }, 0);
+	    let acc = [];
+            for(let i = 0; i < args.length; i++) {
+                if (t > args[i].duration) continue;
+		let curr = args[i].ampl_of_t(t);
+		if (Array.isArray(curr)) {
+                    acc = acc.concat(curr);
+		} else acc.push(curr);
+	    }
+	    return acc;
 	});
     }, "Creates a chord of given notes (plays them in tandem)", "(chord [notes...])", ["note", "notes"]),
     "note-seq": new Callable(function (args) {
@@ -131,11 +138,11 @@ const global_variables = {
 	}
 	return new PureNote(function(t) {
 	    let got_note = getNoteInSeq(args, t);
-	    if (got_note[0] >= args.length) return 0;
+	    if (got_note[0] >= args.length) return [0];
             return args[got_note[0]].freq_of_t(t - got_note[1]);
 	}, duration, function(t) {
 	    let got_note = getNoteInSeq(args, t);
-	    if (got_note[0] >= args.length) return 0;
+	    if (got_note[0] >= args.length) return [0];
             return args[got_note[0]].ampl_of_t(t - got_note[1]);
 	});
     }, "Creates a sequence of notes but does not play them", "(note-seq [notes...])", ["notes"]),
@@ -216,9 +223,36 @@ const global_variables = {
     "map": new Callable(function(args) {
 	let fn = args[0];
 	if (fn.type !== "Callable") return new Error("First argument should be a callable, not the provided " + args[0], args[0]);
-	return new List(args.slice(1).map(function(a) {
+	return new List(flattenMusicLangListsIn(args.slice(1)).map(function(a) {
 	    let r = fn.apply([a]);
 	    return r;
 	}));
-    }, "Apply a function over each argument.", "(map [function] [stuff...])", [])
+    }, "Apply a function over each argument.", "(map [function] [stuff...])", []),
+    "with-bpm": new Callable(function (args) {
+	if (args.length < 2) return new Error("with-bpm needs at least 2 arguments, not the provided " + args.length, args);
+	let bpm = parseFloat(args[0]);
+	if (isNaN(bpm)) return new Error("expected floating point value for bpm, not " + args[0], args[0]);
+	let duration = 0;
+	let notes = flattenMusicLangListsIn(args.slice(1));
+        if(notes.some(function(note) {
+	    if(!isNote(note)) {
+		return true;
+	    }
+	    duration += note.duration;
+	    return false;
+	})) {
+            return new Error("All arguments (except the first) to with-bpm must have a duration (being a note)", notes);
+	}
+	return new PureNote(function(t) {
+	    t = t * bpm / 60;
+	    let got_note = getNoteInSeq(notes, t);
+	    if (got_note[0] >= notes.length) return [0];
+            return notes[got_note[0]].freq_of_t(t - got_note[1]);
+	}, duration * 60 / bpm, function(t) {
+	    t = t * bpm / 60;
+	    let got_note = getNoteInSeq(notes, t);
+	    if (got_note[0] >= notes.length) return [0];
+            return notes[got_note[0]].ampl_of_t(t - got_note[1]);
+	});
+    }, "Shifts the time to be measured at the given beats per minute (default is 60). The notes are played in sequence (so (with-bpm b (note-seq notes...))) is the same as (with-bpm b notes...)", "(with-bpm [bpm] [notes...])", ["note", "notes"])
 };

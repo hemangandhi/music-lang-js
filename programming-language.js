@@ -1,10 +1,10 @@
 function Error(msg, trigger) {
     this.apply = function (args) {
-        return new Error("Calling uncallable 'error':" + this.message);
+        return new Error("Calling uncallable 'error':" + this.message, this);
     }
     this.type = "Error";
     this.message = msg;
-    if (trigger.type === "Error") {
+    if (trigger && trigger.type && trigger.type === "Error") {
 	this.stacktrace = ["Caused by '" + trigger.message + "'"].concat(trigger.stacktrace);
     } else {
 	this.stacktrace = ["At " + trigger];
@@ -13,7 +13,7 @@ function Error(msg, trigger) {
 
 function Result() {
     this.apply = function (args) {
-        return new Error("Calling uncallable 'result'");
+        return new Error("Calling uncallable 'result'", args);
     }
     this.type = "Result";
 }
