@@ -51,6 +51,18 @@ function getNoteInSeq(notes, t) {
     return [i, start];
 }
 
+function expandWithScalings(base, scalings) {
+    return base
+	.map(function(b) { return scalings.map(function(s) {return b * s;}); })
+	.reduce(function(a, s) { return a.concat(s) }, []);
+}
+
+function normalize(abnormal) {
+    let total = abnormal.reduce((x, y) => x + y, 0);
+    if (total === 0) return abnormal;
+    return abnormal.map((a) => a / total);
+}
+
 const global_variables = {
     "play": new Callable(function (args) {
 	args = flattenMusicLangListsIn(args);
@@ -254,5 +266,48 @@ const global_variables = {
 	    if (got_note[0] >= notes.length) return [0];
             return notes[got_note[0]].ampl_of_t(t - got_note[1]);
 	});
-    }, "Shifts the time to be measured at the given beats per minute (default is 60). The notes are played in sequence (so (with-bpm b (note-seq notes...))) is the same as (with-bpm b notes...)", "(with-bpm [bpm] [notes...])", ["note", "notes"])
+    }, "Shifts the time to be measured at the given beats per minute (default is 60). The notes are played in sequence (so (with-bpm b (note-seq notes...))) is the same as (with-bpm b notes...)", "(with-bpm [bpm] [notes...])", ["note", "notes"]),
+    "with-overtones": new Callable(function (args) {
+	if (args.length < 3) return new Error("with-overtones needs at least 3 arguments.", args);
+	let i = 0;
+	let harms = [1];
+	let ampls = [1];
+	for(; i < args.length; i+= 2) {
+	    let fl = parseFloat(args[i]);
+	    // we're in notes territory
+	    if (isNaN(fl)) break;
+
+	    if (i + 1 >= args.length)
+		return new Error("Expected a pair of floats for harmonics and amplitude scalars followed by notes", fl2);
+	    let fl2 = parseFloat(args[i + 1]);
+	    if (isNaN(fl2) && fl2 < 0 && fl2 > 1)
+		return new Error("Expected a float between 0 and 1 for amplitude scalars, got: " + fl2, fl2);
+	    harms.push(fl);
+	    ampls.push(fl2);
+	}
+
+	let notes = args.slice(i);
+	let duration = 0;
+	if (notes.length === 0) return new Error("with-overtones needs at least 1 note for the last argument", args);
+	else if (notes.some(function (note) {
+	    if (isNote(note)) {
+		duration += note.duration;
+		return false;
+	    }
+	    return true;
+	})) {
+	    return new Error("All arguments to with-overtones after the overtones themselves should be notes", args);
+	}
+	ampls = normalize(ampls);
+
+	return new PureNote(function(t) {
+	    let got_note = getNoteInSeq(notes, t);
+	    if (got_note[0] >= notes.length) return [0];
+            return expandWithScalings(notes[got_note[0]].freq_of_t(t - got_note[1]), harms);
+	}, duration, function(t) {
+	    let got_note = getNoteInSeq(notes, t);
+	    if (got_note[0] >= notes.length) return [0];
+            return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
+	});
+    }, "Adds harmonics at the provided amplitude scalings for all the fundamental frequencies provided in each node. The harmonics and amplitudes are a sequence of floating points, so, for example, a violin would be (with-overtones 2 0.9 4 0.9 8 0.9 (note 440 1)). The fundamental tone is included with no amplitude scalar.", "(with-overtones [harmonics-and-amplitudes...] [notes...])", ["note", "notes"])
 };

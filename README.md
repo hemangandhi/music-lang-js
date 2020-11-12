@@ -93,21 +93,17 @@ If you've read up to here you probably have a bone to pick. Here's the skeleton 
 Code-related:
 
 - Why does the evaluator try to apply the outermost value? Make it don't.
-- Clean up the website a little bit: get a default width textbox and rearrange.
-- Divide the code up into "modules" -- some for parsing and some for the note effects
 - Better parser so that strings can exist and include spaces.
+- Make each module a function with deps as arguments and load the wacky mess in index.html properly.
+- Add a library for function error checks to make callables easier to understand.
+- Use arrow functions?
 
 Musical features:
 
-- Overtones to understand/mess with [timbre](https://en.wikipedia.org/wiki/Timbre)
 - More of the effects mentioned above (chords first, then the composable effects)
+- Save music.
 
 Language features:
 
-- Functions and variables understood.
 - I want a notion of key-less melody that can later be played in a given key.
 - Decide how to have a "top-level"
-
-Docs:
-
-- All a set of pre-loadable examples somehow
