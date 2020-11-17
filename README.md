@@ -35,32 +35,27 @@ There are effects on the amplitude:
 This is important since every note would have an envelope. In fact, "staccato" may
 just be a steeper "attack" with a slight "sustain".
 
-### OK, so Types
+### The Representation
 
-To manage this, there's three types that seem to matter (at least for the way I'm dealing with notes). Theres:
-
-1. Floats
-1. Pitches
-1. Notes
-
-A `float` is just a number.
-
-A `pitch` is a mapping from a time to a frequency. This is for *one note* so it's a constant function unless the
-note is being played with one of the effects.
-
-A `note` has two functions: the `pitch` and a similar function for the amplitude.
-
-This allows the effects to compose with each other in a neat, known associative way.
+Notes are a triple: `(duration, time -> [frequency], time -> [amplitude])`.
 
 ## Time
 
-Tempo, since I hardly understand it, will start off as a way to manage beats and manipulate BPM.
+Tempo, since I hardly understand it, will start off as a way to manipulate BPM (with a default of 60 bpm).
 
 ## The Language Itself
 
 *Work in progress*
 
-The language is a Lisp. However, there are a few undecided questions:
+The language is a Lisp in syntax. Technically it has the following mishaps:
+
+- It's dynamically scoped.
+- There's no macros.
+- There's no strings.
+- Everything that's not a variable is a symbol until the function it's passed to decides not to accept it.
+- Error handling doesn't exist -- errors only exist to aid my debugging.
+
+There are some questions (other than whether I have it in my heart to fix the mishaps).
 
 - How much to allow functions to do?
   - Do I even need real functions or would a handful of patterns suffice?
@@ -68,9 +63,6 @@ The language is a Lisp. However, there are a few undecided questions:
   - Of course it does for any sense of "melody" but can `play` be some sort of
     [do-notation](https://en.wikibooks.org/wiki/Haskell/do_notation) that manages
     the sequencing?
-- How much to default? `play` might be a bare-bones way to manage playing notes, but
-  would a function like `play-with-envelope` make sense? Would there be any logic to
-  manage if notes provide their own?
 
 ### The UI -- Interactive Coding
 
@@ -85,6 +77,25 @@ This culminated with a system for inserting code snippets (since it looked diffi
 (except `play`) also may list the set of hints where a function call would provide the required argument.
 
 To make this legible, instead of just a lengthy one-line string, a formatting button helps out. This can also remove hints for the variadic functions.
+
+### The Quirks of the Functions
+
+There's documentation on the functions in [the UI](https://hemangandhi.github.io/music-lang-js/) but that's for users, not about me ranting about things
+I wish weren't true.
+
+| Function/feature | Things I wish weren't true |
+|---|---|
+| Flattening of lists of notes and notes into one list | That I had to flatten |
+| note-seq | IDK, I just think it's gross. Especially if it becomes my hack to legato |
+| with-adsr | 5 args is ew. No symbols to make it more readable T_T |
+| fn | This doesn't add the function to the environment or manage closures correctly |
+| map | Why is this the only way to make lists in this "lisp"?! |
+| with-overtones | If only I could actually inline array definitions neatly |
+| with-known-timbre | Since this can manipulate just about anything about the note, it's weird to know how to compose with it correctly. |
+
+The `with-known-timbre` abstraction may also need a better representation since the overtones in a piano vary heavily based on the note.
+
+I also sort of wish that there were ways to destructure and play with notes inside the language, but it might be more than necessary.
 
 ## TODOs
 
@@ -101,9 +112,13 @@ Code-related:
 Musical features:
 
 - More of the effects mentioned above (chords first, then the composable effects)
-- Save music.
 
 Language features:
 
 - I want a notion of key-less melody that can later be played in a given key.
 - Decide how to have a "top-level"
+
+Debugging:
+
+- Save music: WTF is up with `document.cookie` not being set?
+- Why does music cut out ~5s in?
