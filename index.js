@@ -146,6 +146,16 @@ function formatCode(textarea_id, err_id, rm_hints_checkbox_id) {
     }
 }
 
+function saveEditorTxt(editor_txtarea_id, saved_option) {
+    let now = new Date();
+    let exp = new Date();
+    exp.setTime(now.getTime() + 7 * 24 * 24 * 60 * 1000);
+    let cookie = "saved_music_lang=" + document.getElementById(editor_txtarea_id).value;
+    cookie += "expires=" +  exp.toUTCString() + ";";
+    document.cookie = cookie;
+    document.getElementById(saved_option).innerText = "Saved at " + now.toUTCString();
+}
+
 function loadDemos(selector_id, editor_txtarea_id) {
     let selector = document.getElementById(selector_id);
     for(demo in demos) {
@@ -154,8 +164,16 @@ function loadDemos(selector_id, editor_txtarea_id) {
 	option.value = demo.replaceAll(' ', '-');
 	selector.appendChild(option);
     }
+
     selector.addEventListener("change", function(evt) {
-	if (selector.value === "clear") return;
-	document.getElementById(editor_txtarea_id).value = demos[selector.value.replaceAll('-', ' ')];
+	if (selector.value !== "clear") {
+	    document.getElementById(editor_txtarea_id).value = demos[selector.value.replaceAll('-', ' ')];
+	    return;
+	}
+	let maybe_saved_code = document.cookie.split(';').filter((kv) => kv.startsWith('saved_music_lang='));
+	console.log(maybe_saved_code);
+	if (maybe_saved_code.length > 0) {
+	    document.getElementById(editor_txtarea_id).value = maybe_saved_code[0].split('=')[1];
+	}
     });
 }

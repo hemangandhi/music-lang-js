@@ -54,8 +54,9 @@
 	(this is the only use of cookies by this site) and add an option for it in the drop down menu.
 	<label for="demo-drop-down">Select a demo (including anything you may have saved)</label>
 	<select id="demo-drop-down">
-	  <option value="clear"></option>
+	  <option value="clear" id="clear-demo-option"></option>
 	</select>
+        <button onclick="saveEditorTxt('src-txt-area', 'clear-demo-option')">Save</button>
       </div>
     </div>
 
