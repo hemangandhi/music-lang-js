@@ -44,6 +44,25 @@ function tryNoteToWave(note, audio_ctx) {
     };
 }
 
+function addADSR(note, a_vol, d_start, s_start, s_vol, r_start) {
+    return new PureNote(note.freq_of_t, note.duration, function(t) {
+	let ratio = t/note.duration;
+	let scaling = 1;
+	if (ratio < d_start) {
+	    scaling = ratio * a_vol / d_start;
+	} else if (ratio < s_start) {
+	    let slope = (s_vol - a_vol) / (s_start - d_start);
+	    scaling = slope * (ratio - d_start) + a_vol;
+	} else if (ratio < r_start) {
+	    scaling = s_vol;
+	} else {
+	    let slope = s_vol / (r_start - 1);
+	    scaling = slope * (ratio - r_start) + s_vol;
+	}
+	return note.ampl_of_t(t).map(function(a) { return a * scaling; });
+    });
+}
+
 function getNoteInSeq(notes, t) {
     let start = 0, i = 0;
     for(; i < notes.length && t > start + notes[i].duration;
@@ -196,22 +215,7 @@ const global_variables = {
 	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringify(args[5]), args[5]);
 
 	let note = args[5];
-	return new PureNote(note.freq_of_t, note.duration, function(t) {
-	    let ratio = t/note.duration;
-	    let scaling = 1;
-	    if (ratio < d_start) {
-		scaling = ratio * a_vol / d_start;
-	    } else if (ratio < s_start) {
-		let slope = (s_vol - a_vol) / (s_start - d_start);
-		scaling = slope * (ratio - d_start) + a_vol;
-	    } else if (ratio < r_start) {
-		scaling = s_vol;
-	    } else {
-		let slope = s_vol / (r_start - 1);
-		scaling = slope * (ratio - r_start) + s_vol;
-	    }
-	    return note.ampl_of_t(t).map(function(a) { return a * scaling; });
-	});
+	return addASDR(note, a_vol, d_start, s_start, s_vol, r_start);
     }, "Wraps a note in an ADSR envelope. The timings are represented relative to the duration of the note and volume scaling the volume of the note",
     "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])", ["note", "notes"]),
     "fn": new SpecialForm(function (args) {
@@ -309,5 +313,41 @@ const global_variables = {
 	    if (got_note[0] >= notes.length) return [0];
             return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
 	});
-    }, "Adds harmonics at the provided amplitude scalings for all the fundamental frequencies provided in each node. The harmonics and amplitudes are a sequence of floating points, so, for example, a violin would be (with-overtones 2 0.9 4 0.9 8 0.9 (note 440 1)). The fundamental tone is included with no amplitude scalar.", "(with-overtones [harmonics-and-amplitudes...] [notes...])", ["note", "notes"])
+    }, "Adds harmonics at the provided amplitude scalings for all the fundamental frequencies provided in each node. The harmonics and amplitudes are a sequence of floating points, so, for example, a violin would be (with-overtones 2 0.9 4 0.9 8 0.9 (note 440 1)). The fundamental tone is included with no amplitude scalar.", "(with-overtones [harmonics-and-amplitudes...] [notes...])", ["note", "notes"]),
+    "with-known-timbre": new Callable(function (args) {
+	if (args.length < 2) return new Error("with-known-timbre needs at least 2 arguments.", args);
+	let known = known_timbres[args[0]];
+	if (known === undefined) return new Error("Unknown timbre: " + args[0], args[0]);
+	let harms = known['harmonics'];
+	let ampls = known['amplitudes'];
+	let adsr = known['adsr'];
+
+	let notes = args.slice(1);
+	let duration = 0;
+	if (notes.length === 0) return new Error("with-known-timbre needs at least 1 note for the last argument", args);
+	else if (notes.some(function (note) {
+	    if (isNote(note)) {
+		duration += note.duration;
+		return false;
+	    }
+	    return true;
+	})) {
+	    return new Error("All arguments to with-known-timber after the first should be notes", args);
+	}
+	ampls = normalize(ampls);
+
+	let result_note = new PureNote(function(t) {
+	    let got_note = getNoteInSeq(notes, t);
+	    if (got_note[0] >= notes.length) return [0];
+            return expandWithScalings(notes[got_note[0]].freq_of_t(t - got_note[1]), harms);
+	}, duration, function(t) {
+	    let got_note = getNoteInSeq(notes, t);
+	    if (got_note[0] >= notes.length) return [0];
+            return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
+	});
+	if (adsr) {
+	    return addADSR(result_note, adsr['a_vol'], adsr['d_start'], adsr['s_start'], adsr['s_vol'], adsr['r_start']);
+	}
+	return result_note;
+    }, "Use a pre-defined timbre (for example: " + Object.keys(known_timbres).join(", ") + ") for a set of notes.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"])
 };
