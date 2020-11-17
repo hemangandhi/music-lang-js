@@ -46,4 +46,29 @@ let demos = {
                     (note-seq (note (pitch-at D 3) 2)
                               (note (pitch-at G 3) 2)))))))
 `,
+    "Happy Birthday": `
+(play (with-bpm 180 (with-known-timbre piano
+  (note (pitch-at G 2) 0.5)
+  (note (pitch-at G 2) 0.5)
+  (note (pitch-at A 3) 1)
+  (note (pitch-at G 2) 1)
+  (note (pitch-at C 3) 1)
+  (note (pitch-at B 3) 2)
+  (note (pitch-at G 2) 0.5)
+  (note (pitch-at G 2) 0.5)
+  (note (pitch-at A 3) 1)
+  (note (pitch-at G 2) 1)
+  (note (pitch-at C 3) 1)
+  (note (pitch-at D 3) 2)
+  (note (pitch-at G 2) 0.5)
+  (note (pitch-at G 2) 0.5)
+  (note (pitch-at G 3) 1)
+  (note (pitch-at E 3) 1)
+  (note (pitch-at C 3) 0.5)
+  (note (pitch-at C 3) 0.5)
+  (note (pitch-at B 3) 1)
+  (note (pitch-at A 3) 1)
+  (note (pitch-at F 3) 0.5)
+  (note (pitch-at F 3) 0.5))))
+`
 }

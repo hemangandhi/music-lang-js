@@ -215,7 +215,7 @@ const global_variables = {
 	if (!isNote(args[5])) return new Error("Last argument must be a note, not the provided " + JSON.stringify(args[5]), args[5]);
 
 	let note = args[5];
-	return addASDR(note, a_vol, d_start, s_start, s_vol, r_start);
+	return addADSR(note, a_vol, d_start, s_start, s_vol, r_start);
     }, "Wraps a note in an ADSR envelope. The timings are represented relative to the duration of the note and volume scaling the volume of the note",
     "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])", ["note", "notes"]),
     "fn": new SpecialForm(function (args) {
@@ -335,8 +335,11 @@ const global_variables = {
 	    return new Error("All arguments to with-known-timber after the first should be notes", args);
 	}
 	ampls = normalize(ampls);
+	if (adsr) {
+	    notes = notes.map((n) => addADSR(n, adsr['a_vol'], adsr['d_start'], adsr['s_start'], adsr['s_vol'], adsr['r_start']));
+	}
 
-	let result_note = new PureNote(function(t) {
+	return new PureNote(function(t) {
 	    let got_note = getNoteInSeq(notes, t);
 	    if (got_note[0] >= notes.length) return [0];
             return expandWithScalings(notes[got_note[0]].freq_of_t(t - got_note[1]), harms);
@@ -345,9 +348,5 @@ const global_variables = {
 	    if (got_note[0] >= notes.length) return [0];
             return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
 	});
-	if (adsr) {
-	    return addADSR(result_note, adsr['a_vol'], adsr['d_start'], adsr['s_start'], adsr['s_vol'], adsr['r_start']);
-	}
-	return result_note;
     }, "Use a pre-defined timbre (for example: " + Object.keys(known_timbres).join(", ") + ") for a set of notes.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"])
 };
