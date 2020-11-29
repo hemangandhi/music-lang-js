@@ -8,8 +8,14 @@ function centsToHertz(cents) {
 const known_timbres = {
     // Experimental guesstimate: this sounds like crap
     'violin': {
-	'harmonics': [2,4,8,16,32,64],
-	'amplitudes': [0.02, 0.02, 0.0125, 0.0125, 0.0125]
+	'harmonics': [ //centsToHertz(1),
+		      2 * centsToHertz(3),
+		      3 * centsToHertz(8),
+		      4 * centsToHertz(11),
+		      5 * centsToHertz(2),
+		      6 * centsToHertz(27),
+		      8 * centsToHertz(43)],
+	'amplitudes': [0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
     },
     // http://www.afn.org/~afn49304/youngnew.htm for more -- comments below reference this.
     'piano': {

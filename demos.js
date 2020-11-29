@@ -69,6 +69,10 @@ let demos = {
   (note (pitch-at B 3) 1)
   (note (pitch-at A 3) 1)
   (note (pitch-at F 3) 0.5)
-  (note (pitch-at F 3) 0.5))))
+  (note (pitch-at F 3) 0.5)
+  (note (pitch-at E 3) 1)
+  (note (pitch-at C 3) 1)
+  (note (pitch-at D 3) 1)
+  (note (pitch-at C 3) 2))))
 `
 }

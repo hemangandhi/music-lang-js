@@ -267,7 +267,7 @@ const global_variables = {
 	}, duration * 60 / bpm, function(t) {
 	    t = t * bpm / 60;
 	    let got_note = getNoteInSeq(notes, t);
-	    if (got_note[0] >= notes.length) return [0];
+	    if (got_note[0] >= notes.length) { return [0]; }
             return notes[got_note[0]].ampl_of_t(t - got_note[1]);
 	});
     }, "Shifts the time to be measured at the given beats per minute (default is 60). The notes are played in sequence (so (with-bpm b (note-seq notes...))) is the same as (with-bpm b notes...)", "(with-bpm [bpm] [notes...])", ["note", "notes"]),
@@ -348,5 +348,38 @@ const global_variables = {
 	    if (got_note[0] >= notes.length) return [0];
             return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
 	});
-    }, "Use a pre-defined timbre (for example: " + Object.keys(known_timbres).join(", ") + ") for a set of notes.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"])
+    }, "Use a pre-defined timbre (for example: " + Object.keys(known_timbres).join(", ") + ") for a set of notes.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"]),
+    "glissando": new Callable(function (args) {
+	if (args.length != 3)
+	    return new Error("note needs 3 arguments, not the " + args.length + " provided", args);
+	let freq1_val = parseFloat(args[0]);
+	let freq2_val = parseFloat(args[1]);
+	let dur_val = parseFloat(args[2]);
+	if (isNaN(freq1_val))
+	    return new Error("Frequency need to be a float", args[0]);
+	if (isNaN(freq2_val))
+	    return new Error("Frequency needs to be a float", args[1]);
+	if (isNaN(dur_val))
+	    return new Error("Duration needs be a float", args[2]);
+	if (dur_val <= 0) return new Error("Duration must be positive", args[2]);
+        let freq_fn = function(t) {
+	    return [freq1_val + t/dur_val * (freq2_val - freq1_val)];
+	};
+	return new PureNote(freq_fn, dur_val);
+    }, "A linear frequency slide from the first pitch to the second", "(glissando [frequency] [frequency] [duration])", ["note", "notes"]),
+    "vibrato": new Callable(function (args) {
+	if (args.length != 3)
+	    return new Error("note needs 3 arguments, not the " + args.length + " provided", args);
+	let vampl = parseFloat(args[0]);
+	let vpeaks = parseFloat(args[1]);
+	let base_note = args[2];
+	if (isNaN(vampl))
+	    return new Error("Frequency needs be floats", args[0]);
+	if (isNaN(vpeaks))
+	    return new Error("Frequency needs be floats", args[1]);
+	if (vpeaks <= 0) return new Error("the number of times you reach the peak pitch must be positive", args[0]);
+	if (!isNote(base_note)) return new Error("last arg must be a note", args[2]);
+        let freq_fn = function(t) { return base_note.freq_of_t(t).map((f) => f + vampl * Math.cos(t * vpeaks * Math.PI * 2)); };
+	return new PureNote(freq_fn, base_note.duration, base_note.ampl_of_t);
+    }, "An oscillation of pitch that varies by the change, hitting the highest peak the provided number of times.", "(vibrato [pitch-change] [num-peaks] [note])", ["note", "notes"])
 };
