@@ -22,7 +22,87 @@ function runMusic(textarea_id, err_out_id) {
     }
 }
 
-function makeDocsTable(table_id, txt_box_id, err_id) {
+function codeOfTimbre(timbre) {
+    let overtone_args = timbre.harmonics.map((h, i) => h + " " + timbre.amplitudes[i]).join(" ");
+    let preamble = "(with-overtones " + overtone_args;
+    if (!timbre.adsr) {
+        return preamble  + " [notes...])";
+    }
+    let fn_bit = "(fn (adsr-bit n) (with-adsr " + [timbre.adsr.a_vol, timbre.adsr.d_start, timbre.adsr.s_start, timbre.adsr.s_vol, timbre.adsr.r_start].join(" ") + " n))";
+    return preamble + " (map " + fn_bit + " [notes...]))";
+    
+}
+
+function makeSnippetClicker(err_id, txt_box_id, snippets_targets, snippet) {
+    return function(event) {
+	document.getElementById(err_id).innerText = "";
+        let text = document.getElementById(txt_box_id).value;
+	if (!text && !snippets_targets) {
+	    document.getElementById(txt_box_id).value = snippet;
+	    return;
+	} else if (!snippets_targets) {
+	    document.getElementById(err_id).innerText = "Can't add more than one top-level definition";
+	    return;
+	}
+
+	let found_snippet = snippets_targets.map(function(snippet) {
+	    return [snippet, text.indexOf("[" + snippet + "]")];
+	}).filter(function(i) { return i[1] >= 0; });
+	if (found_snippet.length > 0) {
+	    let fsnippet = found_snippet[0][0];
+	    document.getElementById(txt_box_id).value = text.replace("[" + fsnippet + "]", snippet);
+	    return;
+	}
+	found_snippet = snippets_targets.map(function(snippet) {
+	    return [snippet, text.indexOf("[" + snippet + "...]")];
+	}).filter(function(i) { return i[1] >= 0; });
+	if (found_snippet.length > 0) {
+	    let fsnippet = found_snippet[0][0];
+	    document.getElementById(txt_box_id).value = text.replace("[" + fsnippet + "...]", snippet + " [" + fsnippet + "...]");
+	} else {
+	    document.getElementById(err_id).innerText = "Can't find a proper place to insert the snippet, hints such as [" + snippets_targets + "] required (add ellipsis for mulitple arguments with the same hint).";
+	}
+    }
+}
+
+function makeTimbreTable(err_id, txt_box_id, timbres_id) {
+    let table = document.getElementById(timbres_id);
+
+    // title
+    let header = document.createElement("tr");
+    let col1 = document.createElement("th");
+    col1.appendChild(document.createTextNode("Timbre name"));
+    header.appendChild(col1);
+    let col2 = document.createElement("th");
+    col2.appendChild(document.createTextNode("Timbre snippet (click to add to your code)"));
+    header.appendChild(col2);
+    table.appendChild(header);
+
+    // each row
+    Object.keys(known_timbres).forEach(function (timbre) {
+	let row = document.createElement("tr");
+	let fn_name = document.createElement("td");
+	fn_name.addEventListener("click", makeSnippetClicker(err_id, txt_box_id, ['note', 'notes'], "(with-known-timbre " + timbre + " [notes...])"));
+	fn_name.appendChild(document.createTextNode(timbre));
+	fn_name.classList.add("func-name");
+	let fn = document.createElement("td");
+	let fn_snip = document.createElement("code");
+	let sn = codeOfTimbre(known_timbres[timbre])
+	fn_snip.appendChild(document.createTextNode(sn));
+	fn.appendChild(fn_snip);
+	fn.classList.add("func-name");
+	fn.addEventListener("click", makeSnippetClicker(err_id, txt_box_id, ['note', 'notes'], sn));
+
+        //add that row to the table
+	row.appendChild(fn_name);
+	row.appendChild(fn);
+	table.appendChild(row);
+    });
+}
+
+function makeDocsTable(table_id, txt_box_id, err_id, timbres_id) {
+    makeTimbreTable(err_id, txt_box_id, timbres_id);
+
     let table = document.getElementById(table_id);
 
     // title
@@ -51,35 +131,7 @@ function makeDocsTable(table_id, txt_box_id, err_id) {
 	fn.appendChild(fn_snip);
 	fn.classList.add("func-name");
 	if (global.snippet) {
-	    fn.addEventListener("click", function(event) {
-		document.getElementById(err_id).innerText = "";
-		let text = document.getElementById(txt_box_id).value;
-		if (!text && !global.snippets_targets) {
-		    document.getElementById(txt_box_id).value = global.snippet;
-		    return;
-		} else if (!global.snippets_targets) {
-		    document.getElementById(err_id).innerText = "Can't add more than one top-level definition";
-		    return;
-		}
-
-		let found_snippet = global.snippets_targets.map(function(snippet) {
-		    return [snippet, text.indexOf("[" + snippet + "]")];
-		}).filter(function(i) { return i[1] >= 0; });
-		if (found_snippet.length > 0) {
-		    let snippet = found_snippet[0][0];
-		    document.getElementById(txt_box_id).value = text.replace("[" + snippet + "]", global.snippet);
-		    return;
-		}
-		found_snippet = global.snippets_targets.map(function(snippet) {
-		    return [snippet, text.indexOf("[" + snippet + "...]")];
-		}).filter(function(i) { return i[1] >= 0; });
-		if (found_snippet.length > 0) {
-		    let snippet = found_snippet[0][0];
-		    document.getElementById(txt_box_id).value = text.replace("[" + snippet + "...]", global.snippet + " [" + snippet + "...]");
-		} else {
-		    document.getElementById(err_id).innerText = "Can't find a proper place to insert the snippet, hints such as [" + global.snippets_targets + "] required (add ellipsis for mulitple arguments with the same hint).";
-		}
-	    });
+	    fn.addEventListener("click", makeSnippetClicker(err_id, txt_box_id, global.snippets_targets, global.snippet));
 	} // if
 
         //add that row to the table

@@ -74,5 +74,10 @@ let demos = {
   (note (pitch-at C 3) 1)
   (note (pitch-at D 3) 1)
   (note (pitch-at C 3) 2))))
+`,
+    "Vibrato Glissando": `
+(play (vibrato 5 10
+  (glissando (pitch-at A 5)
+             (pitch-at A 4) 5)))
 `
 }

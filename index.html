@@ -74,9 +74,14 @@
       <button onclick="formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints')">Format Code</button>
       <div id="snippets-errors"></div>
     </div>
-      
+
+    <div id="timbres">
+      <div>Here are the known timbres and what they mean:</div>
+      <table id="timbres-container"></table>
+    </div>
+    
     <script>
-      makeDocsTable("docs-container", "src-txt-area", "snippets-errors");
+      makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
       loadDemos("demo-drop-down", "src-txt-area");
     </script>
   </body>
