@@ -122,3 +122,30 @@ Debugging:
 
 - Save music: WTF is up with `document.cookie` not being set?
 - Why does music cut out ~5s in?
+
+### Concatenative Effect-based PL
+
+Currently, the language is implemented as a Lisp. This is very complicated for two reasons:
+
+- formatting is hard to do algorithmically (particularly in a `<textarea>`)
+- isn't hard to read
+- parens are... a lot
+
+There is a simpler syntax at hand: a concatenative stack-based language with a one-effect "dynamic" effect system.
+
+This time, unlike the partial Lisp implementation, the language will be complete in and of itself.
+(Well, the Lisp is Turing complete but with dynamic scoping, but we shouldn't think of it as such.)
+
+The execution of programs will be through a stack. All values are pushed onto the stack and operators pop off the stack.
+For consistency, `x y f` is `f(x, y)` (unless `y` is a function, in which case you'd get `f(y(x))`).
+
+The language will entail the following types:
+
+| Type | Meaning | Notation |
+|---|---|---|
+| Float | A floating-point number | Regex: `[+-]{,1}\d+(\.d+){,1}` |
+| Symbol | An atomic identifier with no other underlying value. Equal to itself only. | Regex: `:\w+` |
+| Functions | Reads as many values off the stack as arguments, creates a new stack to evaluate its body and then concatenating the stack at the end of the function onto the stack of the caller | `:start-fn [identifiers] :args [body] define-fn!` |
+| Handler | A named function that takes a note as its first parameter and is applied on all subsequent notes | `:start-handler [function] [handler name] handler!` |
+
+I need to work on lists and homoiconicity.
