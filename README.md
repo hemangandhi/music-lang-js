@@ -123,7 +123,7 @@ Debugging:
 - Save music: WTF is up with `document.cookie` not being set?
 - Why does music cut out ~5s in?
 
-### Concatenative Effect-based PL
+### Stack-based Effect-based PL
 
 Currently, the language is implemented as a Lisp. This is very complicated for two reasons:
 
@@ -131,21 +131,81 @@ Currently, the language is implemented as a Lisp. This is very complicated for t
 - isn't hard to read
 - parens are... a lot
 
-There is a simpler syntax at hand: a concatenative stack-based language with a one-effect "dynamic" effect system.
+Instead of this, we could use a stack-based parser and use an effect system to manipulate notes.
 
-This time, unlike the partial Lisp implementation, the language will be complete in and of itself.
-(Well, the Lisp is Turing complete but with dynamic scoping, but we shouldn't think of it as such.)
+Really this would be an effect system with one effect: `note` and based on the handlers (registered
+on a handler stack), this note would be manipulated into the tempo, timbre, and whatever other
+effects. Furthermore, the handler could add more than the 12 diatonic notes to get us micro-tones and
+possibly purer ratios.
 
-The execution of programs will be through a stack. All values are pushed onto the stack and operators pop off the stack.
-For consistency, `x y f` is `f(x, y)` (unless `y` is a function, in which case you'd get `f(y(x))`).
+Since we'll use a stack-based parser system, arithmetic would also be easy to implement to supplement
+experiments with pure tones and microtones.
 
-The language will entail the following types:
+Keywords:
 
-| Type | Meaning | Notation |
-|---|---|---|
-| Float | A floating-point number | Regex: `[+-]{,1}\d+(\.d+){,1}` |
-| Symbol | An atomic identifier with no other underlying value. Equal to itself only. | Regex: `:\w+` |
-| Functions | Reads as many values off the stack as arguments, creates a new stack to evaluate its body and then concatenating the stack at the end of the function onto the stack of the caller | `:start-fn [identifiers] :args [body] define-fn!` |
-| Handler | A named function that takes a note as its first parameter and is applied on all subsequent notes | `:start-handler [function] [handler name] handler!` |
+- `audio`
+- `context`
+- `wave` (special function)
 
-I need to work on lists and homoiconicity.
+Special symbols:
+
+- `:` for context levels
+- `'` for symbols.
+
+| Context | Meaning | Semantics | Syntax? |
+| --- | --- | --- |
+| `phrase` | A phrase of music. A building block for more complicated stuff. | Argument is interpreted as a variable name, lack thereof means that the phrase is anonymous and used to escape a `chord` context. | `[<word>] phrase context:` |
+| `tuning` | A context that interprets notes. | Takes an argument that can be dynamically looked up. This will lead to the concrete definition of a note as a waveform. | `<word> tuning context:` |
+
+What follows is psuedo-code for me to understand what I want.
+
+Jingle bells (first 6 chorus notes -- "Jingle bells/Jingle bells"):
+
+```
+'bass-notes 'phrase context:
+  'diatonic 'tuning context:
+    chord context:
+      'C 2 4 note
+      'G 2 4 note
+    chord context:
+      'C 2 4 note
+      'G 2 4 note
+
+'treble-notes 'phrase context:
+  'diatonic 'tuning context:
+    'E 3 1 note
+    'E 3 1 note
+    'E 3 2 note
+    'E 3 1 note
+    'E 3 1 note
+    'E 3 2 note
+
+audio context:
+  240 'bpm context:
+    1.2 0.05 0.075 1 0.9 'adsr context:
+      'chord context:
+        bass-notes
+	treble-notes
+```
+
+Some perfect fifths:
+(the notes are 100 hz, 150 hz, 225 hz, and 337.5 hz I think).
+
+```
+'fifths 'tuning 'define context:
+  n d note = 1.5 n pow 100 * d wave
+
+audio context:
+  'fifths 'turning context:
+    'chord context:
+      0 3 note
+      1 3 note
+      2 3 note
+      3 3 note
+```
+
+Defining 12-note diatonic tuning:
+
+```
+
+```
