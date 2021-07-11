@@ -32,5 +32,10 @@ const known_timbres = {
 	// Hand-tuned.
 	'amplitudes': [0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02],
 	'adsr': {'a_vol': 1.2, 'd_start': 0.05, 's_start': 0.2, 's_vol': 0.4, 'r_start': 0.3}
+    },
+    // experimental, but decent around the 4th octave.
+    'recorder': {
+	'harmonics': [3, 4, 5],
+	'amplitudes': [0.1, 0.1, 0.1]
     }
 };
