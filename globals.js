@@ -13,7 +13,7 @@ function flattenMusicLangListsIn(list_of_lists) {
 
 function isNote(arg) {
     if((typeof arg.duration) != 'number') {
-	return false;
+        return false;
     } else if((typeof arg.freq_of_t != 'function') || (typeof arg.ampl_of_t != 'function')) {
         return false;
     }
@@ -348,7 +348,7 @@ const global_variables = {
 	    if (got_note[0] >= notes.length) return [0];
             return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
 	});
-    }, "Use a pre-defined timbre (for example: " + Object.keys(known_timbres).join(", ") + ") for a set of notes.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"]),
+    }, "Use a pre-defined timbre (" + Object.keys(known_timbres).join(", ") + ") for a set of notes. See the table below for more.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"]),
     "glissando": new Callable(function (args) {
 	if (args.length != 3)
 	    return new Error("note needs 3 arguments, not the " + args.length + " provided", args);
