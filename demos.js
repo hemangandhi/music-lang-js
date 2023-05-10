@@ -79,5 +79,25 @@ let demos = {
 (play (vibrato 5 10
   (glissando (pitch-at A 5)
              (pitch-at A 4) 5)))
+`,
+    "Ode to joy": `
+(play (with-bpm 150 (with-known-timbre violin
+  (map (fn (v n)
+           (vibrato 0.01 2 n))
+    (note (pitch-at B 4) 1)
+    (note (pitch-at B 4) 1)
+    (note (pitch-at C 4) 1)
+    (note (pitch-at D 4) 1)
+    (note (pitch-at D 4) 1)
+    (note (pitch-at C 4) 1)
+    (note (pitch-at B 4) 1)
+    (note (pitch-at A 4) 1)
+    (note (pitch-at G 3) 1)
+    (note (pitch-at G 3) 1)
+    (note (pitch-at A 4) 1)
+    (note (pitch-at B 4) 1)
+    (note (pitch-at B 4) 1.5)
+    (note (pitch-at A 4) 1)
+    (note (pitch-at A 4) 2)))))
 `
 }
