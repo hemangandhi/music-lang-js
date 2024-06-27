@@ -1,3 +1,9 @@
+function normalize(abnormal) {
+    let total = abnormal.reduce((x, y) => x + y, 0);
+    if (total === 0) return abnormal;
+    return abnormal.map((a) => a / total);
+}
+
 function flattenMusicLangListsIn(list_of_lists) {
     let rv = [];
     for (let i = 0; i < list_of_lists.length; i++) {
@@ -34,7 +40,7 @@ function tryNoteToWave(note, audio_ctx) {
         pulses[i] = 0;
         for(let j = 0; j < freqs.length; j++) {
             let ampl = (j < ampls.length)  ? ampls[j]: 1;
-            pulses[i] += ampl * Math.sin(i / audio_ctx.sampleRate * 2 * Math.PI * freqs[j]) / freqs.length;
+            pulses[i] += ampl * Math.sin(i / audio_ctx.sampleRate * 2 * Math.PI * freqs[j]);
         }
     }
     return {
@@ -74,12 +80,6 @@ function expandWithScalings(base, scalings) {
     return base
         .map(function(b) { return scalings.map(function(s) {return b * s;}); })
         .reduce(function(a, s) { return a.concat(s) }, []);
-}
-
-function normalize(abnormal) {
-    let total = abnormal.reduce((x, y) => x + y, 0);
-    if (total === 0) return abnormal;
-    return abnormal.map((a) => a / total);
 }
 
 const global_variables = {
