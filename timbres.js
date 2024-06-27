@@ -43,6 +43,11 @@ const known_timbres = {
     // based on https://youtu.be/wGkdb6YlLgg?t=416
     'melodica': {
         'harmonics': [centsToHertz(8), 2, 3, 4, 5],
-        'amplitudes': [0.1, 0.1, 0.1, 0.1, 0.1]
-    }
+        'amplitudes': [0.1, 0.1, 0.1, 0.1, 0.1],
+    },
+    'euphonium': {
+        'harmonics': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        'amplitudes': [0.1, 0.1, 0.1, 0.1, 0.01, 0.1, 0.01, 0.05, 0.01, 0.01, 0.01],
+        'adsr': {'a_vol': 1.2, 'd_start': 0.2, 's_start': 0.3, 's_vol': 1, 'r_start': 0.5}
+    },
 };
