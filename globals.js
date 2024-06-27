@@ -393,5 +393,13 @@ const global_variables = {
         if (!isNote(base_note)) return new Error("last arg must be a note", args[2]);
         let freq_fn = function(t) { return base_note.freq_of_t(t).map((f) => f + vampl * Math.cos(t * vpeaks * Math.PI * 2)); };
         return new PureNote(freq_fn, base_note.duration, base_note.ampl_of_t);
-    }, "An oscillation of pitch that varies by the change, hitting the highest peak the provided number of times.", "(vibrato [pitch-change] [num-peaks] [note])", ["note", "notes"])
+    }, "An oscillation of pitch that varies by the change, hitting the highest peak the provided number of times.", "(vibrato [pitch-change] [num-peaks] [note])", ["note", "notes"]),
+    "rest": new Callable(function (args) {
+        if (args.length != 1)
+            return new Error("rest needs exactly one argument, not the " + args.length + " provided", args);
+        let duration = parseFloat(args[0]);
+        if (isNaN(duration) || duration < 0)
+            return new Error("rest's duration needs to be a non-negative floating point number, not the " + args[0] + " provided", args);
+        return new PureNote(function(t) { return [0];}, duration, function(t) { return [0];});
+    }, "A silence for the provided beats.", "(rest [duration])", ["note", "notes"])
 };
