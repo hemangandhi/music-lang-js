@@ -123,12 +123,12 @@ Debugging:
 - Save music: WTF is up with `document.cookie` not being set?
 - Why does music cut out ~5s in?
 
-### Stack-based Effect-based PL
+# Stack-based Effect-based PL
 
 Currently, the language is implemented as a Lisp. This is very complicated for two reasons:
 
 - formatting is hard to do algorithmically (particularly in a `<textarea>`)
-- isn't hard to read
+- is hard to read
 - parens are... a lot
 
 Instead of this, we could use a stack-based parser and use an effect system to manipulate notes.
@@ -153,7 +153,7 @@ Special symbols:
 - `'` for symbols.
 
 | Context | Meaning | Semantics | Syntax? |
-| --- | --- | --- |
+|---|---|---|---|
 | `phrase` | A phrase of music. A building block for more complicated stuff. | Argument is interpreted as a variable name, lack thereof means that the phrase is anonymous and used to escape a `chord` context. | `[<word>] phrase context:` |
 | `tuning` | A context that interprets notes. | Takes an argument that can be dynamically looked up. This will lead to the concrete definition of a note as a waveform. | `<word> tuning context:` |
 
@@ -185,7 +185,7 @@ audio context:
     1.2 0.05 0.075 1 0.9 'adsr context:
       'chord context:
         bass-notes
-	treble-notes
+        treble-notes
 ```
 
 Some perfect fifths:
