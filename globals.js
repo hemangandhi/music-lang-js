@@ -82,6 +82,42 @@ function expandWithScalings(base, scalings) {
         .reduce(function(a, s) { return a.concat(s) }, []);
 }
 
+function applyKnownTimbre(known, include_adsr, args) {
+    if (known === undefined) return new Error("Unknown timbre: " + args[0], args[0]);
+    let harms = known['harmonics'];
+    let ampls = known['amplitudes'];
+    let adsr = known['adsr'];
+
+    let notes = flattenMusicLangListsIn(args.slice(1));
+    let duration = 0;
+    let e = null;
+    if (notes.length === 0) return new Error("with-known-timbre needs at least 1 note for the last argument", args);
+    else if (notes.some(function (note) {
+        if (isNote(note)) {
+            duration += note.duration;
+            return false;
+        }
+        e = note;
+        return true;
+    })) {
+        return new Error("All arguments to with-known-timbre after the first should be notes", e);
+    }
+    ampls = normalize(ampls);
+    if (adsr && include_adsr) {
+        notes = notes.map((n) => addADSR(n, adsr['a_vol'], adsr['d_start'], adsr['s_start'], adsr['s_vol'], adsr['r_start']));
+    }
+
+    return new PureNote(function(t) {
+        let got_note = getNoteInSeq(notes, t);
+        if (got_note[0] >= notes.length) return [0];
+        return expandWithScalings(notes[got_note[0]].freq_of_t(t - got_note[1]), harms);
+    }, duration, function(t) {
+        let got_note = getNoteInSeq(notes, t);
+        if (got_note[0] >= notes.length) return [0];
+        return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
+    });
+}
+
 const global_variables = {
     "play": new Callable(function (args) {
         args = flattenMusicLangListsIn(args);
@@ -327,40 +363,13 @@ const global_variables = {
     "with-known-timbre": new Callable(function (args) {
         if (args.length < 2) return new Error("with-known-timbre needs at least 2 arguments.", args);
         let known = known_timbres[args[0]];
-        if (known === undefined) return new Error("Unknown timbre: " + args[0], args[0]);
-        let harms = known['harmonics'];
-        let ampls = known['amplitudes'];
-        let adsr = known['adsr'];
-
-        let notes = flattenMusicLangListsIn(args.slice(1));
-        let duration = 0;
-        let e = null;
-        if (notes.length === 0) return new Error("with-known-timbre needs at least 1 note for the last argument", args);
-        else if (notes.some(function (note) {
-            if (isNote(note)) {
-                duration += note.duration;
-                return false;
-            }
-            e = note;
-            return true;
-        })) {
-            return new Error("All arguments to with-known-timber after the first should be notes", e);
-        }
-        ampls = normalize(ampls);
-        if (adsr) {
-            notes = notes.map((n) => addADSR(n, adsr['a_vol'], adsr['d_start'], adsr['s_start'], adsr['s_vol'], adsr['r_start']));
-        }
-
-        return new PureNote(function(t) {
-            let got_note = getNoteInSeq(notes, t);
-            if (got_note[0] >= notes.length) return [0];
-            return expandWithScalings(notes[got_note[0]].freq_of_t(t - got_note[1]), harms);
-        }, duration, function(t) {
-            let got_note = getNoteInSeq(notes, t);
-            if (got_note[0] >= notes.length) return [0];
-            return expandWithScalings(notes[got_note[0]].ampl_of_t(t - got_note[1]), ampls);
-        });
+        return applyKnownTimbre(known, true, args);
     }, "Use a pre-defined timbre (" + Object.keys(known_timbres).join(", ") + ") for a set of notes. See the table below for more.", "(with-known-timbre [known-timbre] [notes...])", ["note", "notes"]),
+    "with-known-overtones": new Callable(function (args) {
+        if (args.length < 2) return new Error("with-known-timbre needs at least 2 arguments.", args);
+        let known = known_timbres[args[0]];
+        return applyKnownTimbre(known, false, args);
+    }, "Use a pre-defined set of overtones (" + Object.keys(known_timbres).join(", ") + ") for a set of notes. See the table below for more.", "(with-known-overtones [known-timbre] [notes...])", ["note", "notes"]),
     "glissando": new Callable(function (args) {
         if (args.length != 3)
             return new Error("note needs 3 arguments, not the " + args.length + " provided", args);
