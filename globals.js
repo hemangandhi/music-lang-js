@@ -171,7 +171,7 @@ const global_variables = {
             longest = Math.max(longest, arg.duration);
             return false;
         })) {
-            return new Error("All arguments to chords must be notes.", arg);
+            return new Error("All arguments to chords must be notes.", e);
         }
         return new PureNote(function(t) {
             let acc = [];
