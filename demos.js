@@ -101,21 +101,28 @@ let demos = {
     (note (pitch-at A 4) 2)))))
 `,
     "響け！ユーフォニアム": `
-(play (with-bpm 80 (with-known-timbre euphonium
-  (map (fn (v n)
-           (vibrato 0.01 2 n))
-    (note (pitch-at C 2) 1)
-    (rest 0.25)
-    (note (pitch-at G 1) 0.5)
-    (note (pitch-at C 2) 0.5)
-    (note (pitch-at E 2) 1)
-    (rest 0.125)
-    (chord (note-seq (note (pitch-at G 1) 0.5) (rest 0.5))
-           (note-seq (rest 0.45) (note (pitch-at G 2) 0.55)))
-    (note (pitch-at F# 2) 0.5)
-    (note (pitch-at E 2) 0.5)
-    (note (pitch-at D 2) 0.5)
-    (note (pitch-at C 2) 0.5)
-    (note (pitch-at D 2) 1.5)))))
+(play (with-bpm 80
+  (with-known-overtones euphonium
+    (map (fn (v n)
+             (vibrato 0.01 2 n))
+      (map (fn (adsr-bit n) (with-adsr 1.2 0.2 0.3 1 0.5 n))
+          (note (pitch-at C 2) 1)
+          (rest 0.25)
+          (note (pitch-at G 1) 0.5)
+          (note (pitch-at C 2) 0.5)
+          (note (pitch-at E 2) 1)
+          (rest 0.125))
+      (chord (note-seq
+               (with-adsr 1.2 0.2 0.3 1 0.5 (note (pitch-at G 1) 0.5))
+               (rest 0.5))
+             (note-seq
+               (rest 0.45)
+               (with-adsr 0.8 0.1 0.2 0.7 0.6 (note (pitch-at G 2) 0.55))))
+      (map (fn (adsr-bit n) (with-adsr 1.2 0.2 0.3 1 0.5 n))
+          (note (pitch-at F# 2) 0.5)
+          (note (pitch-at E 2) 0.5)
+          (note (pitch-at D 2) 0.5)
+          (note (pitch-at C 2) 0.5)
+          (note (pitch-at D 2) 1.5))))))
 `
 }
