@@ -1,14 +1,12 @@
 import * as wasm from "music-lang-js";
 
-import * from "./demos.js";
-import * from "./globals.js";
-import * from "./programming-language.js";
-import * from "./timbres.js";
-
-wasm.greet();
+import("./demos.js")
+  .catch(e => console.error("Error importing `demos.js`:", e));
 
 // Older JS
 
+// TODO: oxidize. But see if the error reporting can be done directly in Rust.
+// Furthermore, see if the audio context actually pans out.
 function runMusic(textarea_id, err_out_id) {
     let txt = document.getElementById(textarea_id).value;
     let parsed_and_error = parseMusic(txt);
@@ -32,6 +30,7 @@ function runMusic(textarea_id, err_out_id) {
     }
 }
 
+// TODO: oxidize: this can simply be a method of the timbre struct.
 function codeOfTimbre(timbre) {
     let overtone_args = timbre.harmonics.map((h, i) => h + " " + timbre.amplitudes[i]).join(" ");
     let preamble = "(with-overtones " + overtone_args;
@@ -42,6 +41,7 @@ function codeOfTimbre(timbre) {
     return preamble + " (map " + fn_bit + " [notes...]))";
 }
 
+// TODO: oxidize? This might limit the opportunities from below.
 function makeSnippetClicker(err_id, txt_box_id, snippets_targets, snippet) {
     return function(event) {
         document.getElementById(err_id).innerText = "";
@@ -74,6 +74,8 @@ function makeSnippetClicker(err_id, txt_box_id, snippets_targets, snippet) {
     }
 }
 
+// TODO: oxidize: the PL implementation should have the timbre table.
+// See how much DOM manipulation can be oxidized.
 function makeTimbreTable(err_id, txt_box_id, timbres_id) {
     let table = document.getElementById(timbres_id);
 
@@ -109,6 +111,8 @@ function makeTimbreTable(err_id, txt_box_id, timbres_id) {
     });
 }
 
+// TOOD: oxidize: the function objects should be in Rust.
+// Should see how much DOM-writing could work here.
 function makeDocsTable(table_id, txt_box_id, err_id, timbres_id) {
     makeTimbreTable(err_id, txt_box_id, timbres_id);
 
@@ -238,3 +242,6 @@ function loadDemos(selector_id, editor_txtarea_id) {
         }
     });
 }
+
+makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
+loadDemos("demo-drop-down", "src-txt-area");
