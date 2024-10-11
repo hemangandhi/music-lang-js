@@ -1,124 +1,84 @@
-# Yet Another Music DSL
+<div align="center">
 
-Another?
+  <h1><code>wasm-pack-template</code></h1>
 
-I at least know of [this better language](https://github.com/alda-lang/alda).
+  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
 
-This is inspired by a [Haskell video](https://youtu.be/FYTZkE5BZ-0) whose results I wanted to
-make portable and somewhat reproducible. You can see [my work here](https://hemangandhi.github.io/music-lang-js/).
+  <p>
+    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
+  </p>
 
-Now I ramble on about theory -- programming language theory and something about sine waves (that I swear isn't _music_ theory).
+  <h3>
+    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
+    <span> | </span>
+    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
+  </h3>
 
-## The Structure of a Note
+  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
+</div>
 
-> Ceci n'est pas une note.
+## About
 
-Because it's just a representation.
+[**📚 Read this template tutorial! 📚**][template-docs]
 
-A single note is just a sine wave. For a fixed sine wave played over a fixed duration, there are two axes:
-frequency and amplitude. However, there are more effects to be had since musicians like to mess with both
-over time. In particular, various effects affect frequency for the note's duration:
+This template is designed for compiling Rust libraries into WebAssembly and
+publishing the resulting package to NPM.
 
-- vibrato (the frequency moves on a wave)
-- glissando (the frequency linearly varies between two frequencies)
+Be sure to check out [other `wasm-pack` tutorials online][tutorials] for other
+templates and usages of `wasm-pack`.
 
-There are effects on the amplitude:
+[tutorials]: https://rustwasm.github.io/docs/wasm-pack/tutorials/index.html
+[template-docs]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
 
-- staccato
-- legato
-- accented
-- cresendo (ok this would vary over various notes too)
+## 🚴 Usage
 
-### Envelopes
+### 🐑 Use `cargo generate` to Clone this Template
 
-[A more general amplitude concept.](https://en.wikipedia.org/wiki/Envelope_(music))
-This is important since every note would have an envelope. In fact, "staccato" may
-just be a steeper "attack" with a slight "sustain".
+[Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
 
-### The Representation
+```
+cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
+cd my-project
+```
 
-Notes are a triple: `(duration, time -> [frequency], time -> [amplitude])`.
+### 🛠️ Build with `wasm-pack build`
 
-## Time
+```
+wasm-pack build
+```
 
-Tempo, since I hardly understand it, will start off as a way to manipulate BPM (with a default of 60 bpm).
+### 🔬 Test in Headless Browsers with `wasm-pack test`
 
-## The Language Itself
+```
+wasm-pack test --headless --firefox
+```
 
-*Work in progress*
+### 🎁 Publish to NPM with `wasm-pack publish`
 
-The language is a Lisp in syntax. Technically it has the following mishaps:
+```
+wasm-pack publish
+```
 
-- It's dynamically scoped.
-- There's no macros.
-- There's no strings.
-- Everything that's not a variable is a symbol until the function it's passed to decides not to accept it.
-- Error handling doesn't exist -- errors only exist to aid my debugging.
+## 🔋 Batteries Included
 
-There are some questions (other than whether I have it in my heart to fix the mishaps).
+* [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) for communicating
+  between WebAssembly and JavaScript.
+* [`console_error_panic_hook`](https://github.com/rustwasm/console_error_panic_hook)
+  for logging panic messages to the developer console.
+* `LICENSE-APACHE` and `LICENSE-MIT`: most Rust projects are licensed this way, so these are included for you
 
-- How much to allow functions to do?
-  - Do I even need real functions or would a handful of patterns suffice?
-- Does sequential execution matter?
-  - Of course it does for any sense of "melody" but can `play` be some sort of
-    [do-notation](https://en.wikibooks.org/wiki/Haskell/do_notation) that manages
-    the sequencing?
+## License
 
-### The UI -- Interactive Coding
+Licensed under either of
 
-I have no eyes when it comes to UI. But I try. The site has a textarea for the code and a table which each function documented. The documentation
-and interaction system is baked into the language so far. This section is an explanation of this documentation and interactive coding system.
+* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
-The interactive system started by adding a docstring field to the built-in functions and allowing the automatic creation of a table of functions
-(that appears to the right of the textarea, hopefully). These docstrings lead to a pattern: all the functions seem easier to understand with a
-snippet of code, with arguments annotated with a hint in square brackets (yay, I don't use them elsewhere).
+at your option.
 
-This culminated with a system for inserting code snippets (since it looked difficult to get the cursor position from a textarea). Each function
-(except `play`) also may list the set of hints where a function call would provide the required argument.
+### Contribution
 
-To make this legible, instead of just a lengthy one-line string, a formatting button helps out. This can also remove hints for the variadic functions.
-
-### The Quirks of the Functions
-
-There's documentation on the functions in [the UI](https://hemangandhi.github.io/music-lang-js/) but that's for users, not about me ranting about things
-I wish weren't true.
-
-| Function/feature | Things I wish weren't true |
-|---|---|
-| Flattening of lists of notes and notes into one list | That I had to flatten |
-| note-seq | IDK, I just think it's gross. Especially if it becomes my hack to legato |
-| with-adsr | 5 args is ew. No symbols to make it more readable T_T |
-| fn | This doesn't add the function to the environment or manage closures correctly |
-| map | Why is this the only way to make lists in this "lisp"?! |
-| with-overtones | If only I could actually inline array definitions neatly |
-| with-known-timbre | Since this can manipulate just about anything about the note, it's weird to know how to compose with it correctly. |
-
-The `with-known-timbre` abstraction may also need a better representation since the overtones in a piano vary heavily based on the note.
-
-I also sort of wish that there were ways to destructure and play with notes inside the language, but it might be more than necessary.
-
-## TODOs
-
-If you've read up to here you probably have a bone to pick. Here's the skeleton I'm working with:
-
-Code-related:
-
-- Why does the evaluator try to apply the outermost value? Make it don't.
-- Better parser so that strings can exist and include spaces.
-- Make each module a function with deps as arguments and load the wacky mess in index.html properly.
-- Add a library for function error checks to make callables easier to understand.
-- Use arrow functions?
-
-Musical features:
-
-- More of the effects mentioned above (chords first, then the composable effects)
-
-Language features:
-
-- I want a notion of key-less melody that can later be played in a given key.
-- Decide how to have a "top-level"
-
-Debugging:
-
-- Save music: WTF is up with `document.cookie` not being set?
-- Why does music cut out ~5s in?
+Unless you explicitly state otherwise, any contribution intentionally
+submitted for inclusion in the work by you, as defined in the Apache-2.0
+license, shall be dual licensed as above, without any additional terms or
+conditions.
