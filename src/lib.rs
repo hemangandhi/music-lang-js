@@ -1,5 +1,5 @@
 mod utils;
-mod programming_language;
+mod parser;
 
 use wasm_bindgen::prelude::*;
 

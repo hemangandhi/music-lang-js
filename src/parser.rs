@@ -101,12 +101,6 @@ impl<'a> fmt::Display for SExpr<'a> {
     }
 }
 
-struct Note {
-    freq_of_t: Box<dyn Fn(f64) -> Vec<f64>>,
-    ampl_of_t: Box<dyn Fn(f64) -> Vec<f64>>,
-    duration: f64,
-}
-
 #[cfg(test)]
 mod tests {
 
