@@ -1,8 +1,4 @@
-struct Note {
-    freq_of_t: Box<dyn Fn(f64) -> Vec<f64>>,
-    ampl_of_t: Box<dyn Fn(f64) -> Vec<f64>>,
-    duration: f64,
-}
+use std::fmt;
 
 // NOTE: really, everything will be views into the same string.
 enum SExpr<'a> {
@@ -76,4 +72,34 @@ impl<'a> SExpr<'a> {
         }
         Ok(SExpr::Expr(inner_expr))
     }
+}
+
+impl<'a> fmt::Display for SExpr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            SExpr::Literal(l) => write!(f, "{}", l),
+            SExpr::Expr(e) => {
+                write!(f, "(")?;
+                e.iter().enumerate().map(|(i, is)| {
+                    if i > 0 {
+                        write!(f, " ")?;
+                    }
+                    is.fmt(f)
+                }).collect::<fmt::Result>()?;
+                write!(f, ")")
+            },
+        }
+    }
+}
+
+struct Note {
+    freq_of_t: Box<dyn Fn(f64) -> Vec<f64>>,
+    ampl_of_t: Box<dyn Fn(f64) -> Vec<f64>>,
+    duration: f64,
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
 }
