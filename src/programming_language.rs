@@ -35,19 +35,23 @@ impl<'a> SExpr<'a> {
             if &input[idx..idx + 1] == "(" {
                 let (sub, increment) = Self::parse_expr(&input[idx + 1..])?;
                 inner_vec.push(SExpr::Expr(sub));
-                idx += increment;
+                idx += increment + 1;
                 if &input[idx..idx + 1] != ")" {
-                    return Err(vec!["mismatchd parens".into()]);
+                    return Err(vec!["mismatched parens -- missing ')'".into()]);
                 }
+                idx += 1;
                 continue;
             }
             let literal_len = consume_chars(&input[idx..], is_music_lang_literal);
             if literal_len > 0 {
                 inner_vec.push(SExpr::Literal(&input[idx..idx + literal_len]));
                 idx += literal_len;
-                continue;
             }
-            idx += consume_chars(&input[idx..], |&c| c.is_whitespace());
+            let whitespace_len = consume_chars(&input[idx..], |&c| c.is_whitespace());
+            if whitespace_len == 0 && idx < input.len() && &input[idx..idx + 1] != "(" {
+                break;
+            }
+            idx += whitespace_len;
         }
         Ok((inner_vec, idx))
     }
@@ -69,6 +73,8 @@ impl<'a> SExpr<'a> {
         let (inner_expr, end) = Self::parse_expr(&input[1..])?;
         if end + 1 == input.len() || &input[end + 1..end + 2] != ")" {
             return Err(vec!["Missing ')'".into()]);
+        } else if end + 2 < input.len() {
+            return Err(vec!["Extraneous characters".into()]);
         }
         Ok(SExpr::Expr(inner_expr))
     }
@@ -80,14 +86,17 @@ impl<'a> fmt::Display for SExpr<'a> {
             SExpr::Literal(l) => write!(f, "{}", l),
             SExpr::Expr(e) => {
                 write!(f, "(")?;
-                e.iter().enumerate().map(|(i, is)| {
-                    if i > 0 {
-                        write!(f, " ")?;
-                    }
-                    is.fmt(f)
-                }).collect::<fmt::Result>()?;
+                e.iter()
+                    .enumerate()
+                    .map(|(i, is)| {
+                        if i > 0 {
+                            write!(f, " ")?;
+                        }
+                        is.fmt(f)
+                    })
+                    .collect::<fmt::Result>()?;
                 write!(f, ")")
-            },
+            }
         }
     }
 }
