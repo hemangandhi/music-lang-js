@@ -102,4 +102,72 @@ struct Note {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn test_literals() {
+        // simple alphanumberic
+        assert_eq!(format!("{}", SExpr::parse("tok").unwrap()), "tok");
+        assert_eq!(format!("{}", SExpr::parse("tok   ").unwrap()), "tok");
+        assert_eq!(format!("{}", SExpr::parse("    tok").unwrap()), "tok");
+        assert_eq!(format!("{}", SExpr::parse("    tok   ").unwrap()), "tok");
+
+        // harder stuff
+        assert_eq!(
+            format!("{}", SExpr::parse("deep-fried\"non'sensical").unwrap()),
+            "deep-fried\"non'sensical"
+        );
+        assert_eq!(
+            format!("{}", SExpr::parse("deep-fried\"non'sensical   ").unwrap()),
+            "deep-fried\"non'sensical"
+        );
+        assert_eq!(
+            format!("{}", SExpr::parse("    deep-fried\"non'sensical").unwrap()),
+            "deep-fried\"non'sensical"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                SExpr::parse("    deep-fried\"non'sensical   ").unwrap()
+            ),
+            "deep-fried\"non'sensical"
+        );
+    }
+
+    #[test]
+    fn test_bad_literals() {
+        assert!(SExpr::parse(" too many spaces ").is_err());
+        assert!(SExpr::parse("wrong space").is_err());
+    }
+
+    #[test]
+    fn test_exprs() {
+        assert_eq!(format!("{}", SExpr::parse("(+ 1 2)").unwrap()), "(+ 1 2)");
+        assert_eq!(format!("{}", SExpr::parse("( + 1 2)").unwrap()), "(+ 1 2)");
+        assert_eq!(format!("{}", SExpr::parse("(+ 1 2 )").unwrap()), "(+ 1 2)");
+        assert_eq!(format!("{}", SExpr::parse("( + 1 2 )").unwrap()), "(+ 1 2)");
+
+        assert_eq!(
+            format!("{}", SExpr::parse("(+ 1 2 (* 3 4))").unwrap()),
+            "(+ 1 2 (* 3 4))"
+        );
+        assert_eq!(
+            format!("{}", SExpr::parse("(+ 1 (- 2 23) (* 3 4))").unwrap()),
+            "(+ 1 (- 2 23) (* 3 4))"
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                SExpr::parse("((if (gotta-go-fast) + *) 1 (- 2 23) (* 3 4))").unwrap()
+            ),
+            "((if (gotta-go-fast) + *) 1 (- 2 23) (* 3 4))"
+        );
+    }
+
+    #[test]
+    fn test_bad_exprs() {
+        assert!(SExpr::parse("(+ 1 2").is_err());
+        assert!(SExpr::parse("(+ 1 2) (* 2 4)").is_err());
+        assert!(SExpr::parse("(+ 1 2 (* 2 4)").is_err());
+        assert!(SExpr::parse("(+ 1 2 ) * 2 4)").is_err());
+    }
 }
