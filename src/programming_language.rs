@@ -17,7 +17,18 @@ fn consume_chars(input: &str, predicate: impl Fn(&char) -> bool) -> usize {
         .skip_while(|(_index, value)| predicate(value))
         .next()
         .map(|p| p.0)
-        .unwrap_or(0)
+        .unwrap_or(
+            // If anything matched and we skipped everything, everything matched.
+            if input.chars().next().map(|c| predicate(&c)).unwrap_or(false) {
+                input.len()
+            } else {
+                0
+            },
+        )
+}
+
+fn is_music_lang_literal(c: &char) -> bool {
+    !c.is_whitespace() && *c != '(' && *c != ')'
 }
 
 impl<'a> SExpr<'a> {
