@@ -117,3 +117,26 @@ impl<'a> Evaluator<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    const FLOAT_EPSILON: f64 = 1E-7;
+
+    #[test]
+    fn test_basic_eval_empty_scope() {
+        let parsed_literal = parser::SExpr::parse("1.72").expect("Couldn't parse 1.72");
+        let empty_eval = Evaluator {
+            parent_eval: None,
+            current_scope: HashMap::new(),
+        };
+        let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
+        if let MusicLangObject::Float(f) = evaled {
+            assert!(1.72 - FLOAT_EPSILON < f && f < 1.72 + FLOAT_EPSILON);
+        } else {
+            assert!(false, "Expected a float, got {:#?} instead.", evaled);
+        }
+    }
+}
