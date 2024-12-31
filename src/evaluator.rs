@@ -139,4 +139,26 @@ mod tests {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
     }
+
+    #[test]
+    fn test_basic_eval_and_scope() {
+        let parsed_literal = parser::SExpr::parse("1.72").expect("Couldn't parse 1.72");
+        let parsed_pi = parser::SExpr::parse("PI").expect("Couldn't parse PI");
+        let empty_eval = Evaluator {
+            parent_eval: None,
+            current_scope: HashMap::from([("PI", MusicLangObject::Float(3.14))]),
+        };
+        let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
+        if let MusicLangObject::Float(f) = evaled {
+            assert!(1.72 - FLOAT_EPSILON < f && f < 1.72 + FLOAT_EPSILON);
+        } else {
+            assert!(false, "Expected a float, got {:#?} instead.", evaled);
+        }
+        let evaled = empty_eval.evaluate(&parsed_pi).unwrap();
+        if let MusicLangObject::Float(f) = evaled {
+            assert!(3.14 - FLOAT_EPSILON < f && f < 3.14 + FLOAT_EPSILON);
+        } else {
+            assert!(false, "Expected a float, got {:#?} instead.", evaled);
+        }
+    }
 }
