@@ -154,8 +154,6 @@ mod tests {
 
     use super::*;
 
-    const FLOAT_EPSILON: f32 = 1E-7;
-
     #[test]
     fn test_basic_eval_empty_scope() {
         let parsed_literal = parser::SExpr::parse("1.72").expect("Couldn't parse 1.72");
@@ -165,7 +163,7 @@ mod tests {
         };
         let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
         if let MusicLangObject::Float(f) = evaled {
-            assert!(1.72 - FLOAT_EPSILON < f && f < 1.72 + FLOAT_EPSILON);
+            assert!(1.72 - f32::EPSILON < f && f < 1.72 + f32::EPSILON, "{} is not close enough to 1.72", f);
         } else {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
@@ -182,13 +180,13 @@ mod tests {
         };
         let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
         if let MusicLangObject::Float(f) = evaled {
-            assert!(1.72 - FLOAT_EPSILON < f && f < 1.72 + FLOAT_EPSILON);
+            assert!(1.72 - f32::EPSILON < f && f < 1.72 + f32::EPSILON, "{} is not close enough to 1.72", f);
         } else {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
         let evaled = empty_eval.evaluate(&parsed_pi).unwrap();
         if let MusicLangObject::Float(f) = evaled {
-            assert!(3.14 - FLOAT_EPSILON < f && f < 3.14 + FLOAT_EPSILON);
+            assert!(3.14 - f32::EPSILON < f && f < 3.14 + f32::EPSILON, "{} is not close enough to 3.14", f);
         } else {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
@@ -206,9 +204,9 @@ mod tests {
             current_scope: HashMap::from([("PI", MusicLangObject::Float(3.14))]),
         };
         let evaled = empty_eval.eval_float(&parsed_literal).unwrap();
-        assert!(1.72 - FLOAT_EPSILON < evaled && evaled < 1.72 + FLOAT_EPSILON);
+        assert!(1.72 - f32::EPSILON < evaled && evaled < 1.72 + f32::EPSILON);
         let evaled = empty_eval.eval_float(&parsed_pi).unwrap();
-        assert!(3.14 - FLOAT_EPSILON < evaled && evaled < 3.14 + FLOAT_EPSILON);
+        assert!(3.14 - f32::EPSILON < evaled && evaled < 3.14 + f32::EPSILON);
         let evaled = empty_eval.eval_float(&parsed_pi_getting_called);
         assert!(evaled.is_err());
     }
