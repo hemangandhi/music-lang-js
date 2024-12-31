@@ -1,6 +1,7 @@
 mod utils;
 mod parser;
 mod evaluator;
+mod note_effects;
 
 use wasm_bindgen::prelude::*;
 

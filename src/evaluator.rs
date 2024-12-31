@@ -33,12 +33,12 @@ pub enum MusicLangObject<'a> {
 // Would be nice to impl try to add the context here.
 #[derive(Debug)]
 pub struct MusicLangError {
-    message: String,
-    context: Vec<String>,
+    pub message: String,
+    pub context: Vec<String>,
 }
 
 impl MusicLangError {
-    fn in_context(mut self, new_context: String) -> Self {
+    pub fn in_context(mut self, new_context: String) -> Self {
         self.context.push(new_context);
         MusicLangError {
             message: self.message,
@@ -116,6 +116,22 @@ impl<'a> Evaluator<'a> {
             }
         }
     }
+
+    pub fn eval_float(&self, expr: &'a parser::SExpr) -> Result<f64, MusicLangError> {
+        match self.evaluate(expr) {
+            Result::Err(error) => Err(error.in_context(format!("Expecting a float from {}", expr))),
+            Result::Ok(obj) => {
+                if let MusicLangObject::Float(f) = obj {
+                    Ok(f)
+                } else {
+                    Err(MusicLangError {
+                        message: "Expected to get a float".into(),
+                        context: vec![format!("While evaluating {}", expr)],
+                    })
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -163,6 +179,5 @@ mod tests {
         }
         let evaled = empty_eval.evaluate(&parsed_pi_getting_called);
         assert!(evaled.is_err());
-
     }
 }
