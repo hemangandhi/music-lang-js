@@ -180,4 +180,21 @@ mod tests {
         let evaled = empty_eval.evaluate(&parsed_pi_getting_called);
         assert!(evaled.is_err());
     }
+
+    #[test]
+    fn test_basic_eval_and_scope_via_eval_float() {
+        let parsed_literal = parser::SExpr::parse("1.72").expect("Couldn't parse 1.72");
+        let parsed_pi = parser::SExpr::parse("PI").expect("Couldn't parse PI");
+        let parsed_pi_getting_called = parser::SExpr::parse("(PI)").expect("Couldn't parse (PI)");
+        let empty_eval = Evaluator {
+            parent_eval: None,
+            current_scope: HashMap::from([("PI", MusicLangObject::Float(3.14))]),
+        };
+        let evaled = empty_eval.eval_float(&parsed_literal).unwrap();
+        assert!(1.72 - FLOAT_EPSILON < evaled && evaled < 1.72 + FLOAT_EPSILON);
+        let evaled = empty_eval.eval_float(&parsed_pi).unwrap();
+        assert!(3.14 - FLOAT_EPSILON < evaled && evaled < 3.14 + FLOAT_EPSILON);
+        let evaled = empty_eval.eval_float(&parsed_pi_getting_called);
+        assert!(evaled.is_err());
+    }
 }
