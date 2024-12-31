@@ -4,7 +4,7 @@ use crate::parser;
 use std::rc::Rc;
 
 #[derive(Debug)]
-struct BasicNote {
+pub struct BasicNote {
     frequency: f64,
     duration: f64,
 }
