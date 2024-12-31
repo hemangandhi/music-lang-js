@@ -5,20 +5,20 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct BasicNote {
-    frequency: f64,
-    duration: f64,
+    frequency: f32,
+    duration: f32,
 }
 
 impl evaluator::Note for BasicNote {
-    fn duration(&self) -> f64 {
+    fn duration(&self) -> f32 {
         self.duration
     }
 
-    fn frequency(&self, _t: f64) -> Vec<f64> {
+    fn frequency(&self, _t: f32) -> Vec<f32> {
         vec![self.frequency]
     }
 
-    fn amplitude(&self, _t: f64) -> Vec<f64> {
+    fn amplitude(&self, _t: f32) -> Vec<f32> {
         vec![1.0]
     }
 }
@@ -67,7 +67,7 @@ pub struct Chord {
 }
 
 impl evaluator::Note for Chord {
-    fn duration(&self) -> f64 {
+    fn duration(&self) -> f32 {
         self.notes
             .iter()
             .map(|n| n.duration())
@@ -75,11 +75,11 @@ impl evaluator::Note for Chord {
             .unwrap_or(0.0)
     }
 
-    fn frequency(&self, t: f64) -> Vec<f64> {
+    fn frequency(&self, t: f32) -> Vec<f32> {
         self.notes.iter().flat_map(|n| n.frequency(t)).collect()
     }
 
-    fn amplitude(&self, t: f64) -> Vec<f64> {
+    fn amplitude(&self, t: f32) -> Vec<f32> {
         self.notes.iter().flat_map(|n| n.amplitude(t)).collect()
     }
 }

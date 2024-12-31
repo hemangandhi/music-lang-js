@@ -2,6 +2,7 @@ mod utils;
 mod parser;
 mod evaluator;
 mod note_effects;
+mod play;
 
 use wasm_bindgen::prelude::*;
 

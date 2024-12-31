@@ -4,12 +4,14 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+use web_sys::AudioBufferSourceNode;
+
 pub trait Note: std::fmt::Debug {
-    fn duration(&self) -> f64;
+    fn duration(&self) -> f32;
 
-    fn frequency(&self, t: f64) -> Vec<f64>;
+    fn frequency(&self, t: f32) -> Vec<f32>;
 
-    fn amplitude(&self, t: f64) -> Vec<f64>;
+    fn amplitude(&self, t: f32) -> Vec<f32>;
 }
 
 pub trait SpecialForm<'a>: std::fmt::Debug {
@@ -25,11 +27,12 @@ pub trait SpecialForm<'a>: std::fmt::Debug {
 #[derive(Clone, Debug)]
 pub enum MusicLangObject<'a> {
     Unevaluated(&'a parser::SExpr<'a>),
-    Float(f64),
+    Float(f32),
     // This is sort of a thorn in making the Clone: but it's a hack for map, so it's ok?
     List(Vec<MusicLangObject<'a>>),
     SpecialForm(Rc<dyn SpecialForm<'a>>),
     Note(Rc<dyn Note>),
+    Wave(AudioBufferSourceNode, f32),
 }
 
 // Would be nice to impl try to add the context here.
@@ -111,7 +114,7 @@ impl<'a> Evaluator<'a> {
                 if let Some(scope_obj) = self.scope_lookup(literal) {
                     return Ok(scope_obj);
                 }
-                if let Ok(f) = literal.parse::<f64>() {
+                if let Ok(f) = literal.parse::<f32>() {
                     return Ok(MusicLangObject::Float(f));
                 }
                 return Ok(MusicLangObject::Unevaluated(expr));
@@ -119,7 +122,7 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    pub fn eval_float(&self, expr: &'a parser::SExpr) -> Result<f64, MusicLangError> {
+    pub fn eval_float(&self, expr: &'a parser::SExpr) -> Result<f32, MusicLangError> {
         match self.evaluate(expr) {
             Result::Err(error) => Err(error.in_context(format!("Expecting a float from {}", expr))),
             Result::Ok(MusicLangObject::Float(f)) => Ok(f),
@@ -129,6 +132,21 @@ impl<'a> Evaluator<'a> {
             }),
         }
     }
+
+    pub fn eval_note_list(
+        &self,
+        bits: impl Iterator<Item = &'a parser::SExpr<'a>>,
+    ) -> Result<Vec<Rc<dyn Note>>, MusicLangError> {
+        bits.map(|bit| match self.evaluate(bit) {
+            Result::Err(e) => Err(e),
+            Result::Ok(MusicLangObject::Note(n)) => Ok(n),
+            Result::Ok(_) => Err(MusicLangError {
+                message: format!("Expected {} to parse to a note", bit),
+                context: vec![],
+            }),
+        })
+        .collect::<Result<Vec<Rc<dyn Note>>, MusicLangError>>()
+    }
 }
 
 #[cfg(test)]
@@ -136,7 +154,7 @@ mod tests {
 
     use super::*;
 
-    const FLOAT_EPSILON: f64 = 1E-7;
+    const FLOAT_EPSILON: f32 = 1E-7;
 
     #[test]
     fn test_basic_eval_empty_scope() {
