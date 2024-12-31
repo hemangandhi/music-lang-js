@@ -14,6 +14,8 @@ pub trait Note: std::fmt::Debug {
 
 pub trait SpecialForm<'a>: std::fmt::Debug {
     fn evaluate(
+        // NOTE: this self param is useful for callables who'll have their params known at
+        // run-time. Most other implementations don't use &self.
         &self,
         evaluator: &Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
@@ -120,16 +122,11 @@ impl<'a> Evaluator<'a> {
     pub fn eval_float(&self, expr: &'a parser::SExpr) -> Result<f64, MusicLangError> {
         match self.evaluate(expr) {
             Result::Err(error) => Err(error.in_context(format!("Expecting a float from {}", expr))),
-            Result::Ok(obj) => {
-                if let MusicLangObject::Float(f) = obj {
-                    Ok(f)
-                } else {
-                    Err(MusicLangError {
-                        message: "Expected to get a float".into(),
-                        context: vec![format!("While evaluating {}", expr)],
-                    })
-                }
-            }
+            Result::Ok(MusicLangObject::Float(f)) => Ok(f),
+            Result::Ok(_obj) => Err(MusicLangError {
+                message: "Expected to get a float".into(),
+                context: vec![format!("While evaluating {}", expr)],
+            }),
         }
     }
 }
