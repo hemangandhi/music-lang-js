@@ -65,6 +65,13 @@ pub struct Evaluator<'a> {
 }
 
 impl<'a> Evaluator<'a> {
+    fn scope_lookup(&self, item: &str) -> Option<MusicLangObject<'a>> {
+        if let Some(current_scope_value) = self.current_scope.get(item) {
+            return Some(current_scope_value.clone());
+        }
+        self.parent_eval.and_then(|p| p.scope_lookup(item))
+    }
+
     pub fn evaluate(
         &'a self,
         expr: &'a parser::SExpr<'a>,
@@ -96,8 +103,15 @@ impl<'a> Evaluator<'a> {
                     context: vec![format!("Evaluating {}", expr)],
                 });
             }
-            parser::SExpr::Literal(literal) => {}
+            parser::SExpr::Literal(literal) => {
+                if let Some(scope_obj) = self.scope_lookup(literal) {
+                    return Ok(scope_obj);
+                }
+                if let Ok(f) = literal.parse::<f64>() {
+                    return Ok(MusicLangObject::Float(f));
+                }
+                return Ok(MusicLangObject::Unevaluated(expr));
+            }
         }
-        Ok(MusicLangObject::Unevaluated(expr))
     }
 }
