@@ -15,7 +15,7 @@ pub trait Note: std::fmt::Debug {
 pub trait SpecialForm<'a>: std::fmt::Debug {
     fn evaluate(
         &self,
-        evaluator: &'a Evaluator<'a>,
+        evaluator: &Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<MusicLangObject<'a>, MusicLangError>;
 }
@@ -72,8 +72,10 @@ impl<'a> Evaluator<'a> {
         self.parent_eval.and_then(|p| p.scope_lookup(item))
     }
 
+    // NOTE: we seem to need 'a > '1 (the implicit lifetime of &self).
+    // Perhaps this is ok -- since 'a is really about the life of the input that was parsed.
     pub fn evaluate(
-        &'a self,
+        &self,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<MusicLangObject<'a>, MusicLangError> {
         match expr {
