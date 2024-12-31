@@ -1,7 +1,7 @@
 use crate::parser;
 
-use std::fmt;
 use std::collections::HashMap;
+use std::fmt;
 
 pub trait Note {
     fn duration(&self) -> f64;
@@ -45,10 +45,14 @@ impl MusicLangError {
 }
 
 impl fmt::Display for MusicLangError {
-
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error! {}
-    - {}", self.message, self.context.join("\n    -"))
+        write!(
+            f,
+            "Error! {}
+    - {}",
+            self.message,
+            self.context.join("\n    -")
+        )
     }
 }
 
@@ -89,9 +93,7 @@ impl<'a> Evaluator<'a> {
                     context: vec![format!("Evaluating {}", expr)],
                 });
             }
-            parser::SExpr::Literal(literal) => {
-
-            }
+            parser::SExpr::Literal(literal) => {}
         }
         Ok(MusicLangObject::Unevaluated(expr))
     }
