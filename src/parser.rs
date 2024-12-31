@@ -1,6 +1,7 @@
 use std::fmt;
 
 // NOTE: really, everything will be views into the same string.
+#[derive(Debug)]
 pub enum SExpr<'a> {
     Literal(&'a str),
     Expr(Vec<SExpr<'a>>),

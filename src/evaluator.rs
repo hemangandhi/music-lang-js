@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
-pub trait Note {
+pub trait Note: std::fmt::Debug {
     fn duration(&self) -> f64;
 
     fn frequency(&self, t: f64) -> Vec<f64>;
@@ -12,7 +12,7 @@ pub trait Note {
     fn amplitude(&self, t: f64) -> Vec<f64>;
 }
 
-pub trait SpecialForm<'a> {
+pub trait SpecialForm<'a>: std::fmt::Debug {
     fn evaluate(
         &self,
         evaluator: &'a Evaluator<'a>,
@@ -20,7 +20,7 @@ pub trait SpecialForm<'a> {
     ) -> Result<MusicLangObject<'a>, MusicLangError>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum MusicLangObject<'a> {
     Unevaluated(&'a parser::SExpr<'a>),
     Float(f64),
