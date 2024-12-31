@@ -163,7 +163,11 @@ mod tests {
         };
         let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
         if let MusicLangObject::Float(f) = evaled {
-            assert!(1.72 - f32::EPSILON < f && f < 1.72 + f32::EPSILON, "{} is not close enough to 1.72", f);
+            assert!(
+                1.72 - f32::EPSILON < f && f < 1.72 + f32::EPSILON,
+                "{} is not close enough to 1.72",
+                f
+            );
         } else {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
@@ -180,13 +184,21 @@ mod tests {
         };
         let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
         if let MusicLangObject::Float(f) = evaled {
-            assert!(1.72 - f32::EPSILON < f && f < 1.72 + f32::EPSILON, "{} is not close enough to 1.72", f);
+            assert!(
+                1.72 - f32::EPSILON < f && f < 1.72 + f32::EPSILON,
+                "{} is not close enough to 1.72",
+                f
+            );
         } else {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
         let evaled = empty_eval.evaluate(&parsed_pi).unwrap();
         if let MusicLangObject::Float(f) = evaled {
-            assert!(3.14 - f32::EPSILON < f && f < 3.14 + f32::EPSILON, "{} is not close enough to 3.14", f);
+            assert!(
+                3.14 - f32::EPSILON < f && f < 3.14 + f32::EPSILON,
+                "{} is not close enough to 3.14",
+                f
+            );
         } else {
             assert!(false, "Expected a float, got {:#?} instead.", evaled);
         }
