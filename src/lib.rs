@@ -1,5 +1,6 @@
 mod utils;
 mod parser;
+mod evaluator;
 
 use wasm_bindgen::prelude::*;
 

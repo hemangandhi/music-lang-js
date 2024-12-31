@@ -1,7 +1,7 @@
 use std::fmt;
 
 // NOTE: really, everything will be views into the same string.
-enum SExpr<'a> {
+pub enum SExpr<'a> {
     Literal(&'a str),
     Expr(Vec<SExpr<'a>>),
 }
@@ -56,7 +56,7 @@ impl<'a> SExpr<'a> {
         Ok((inner_vec, idx))
     }
 
-    fn parse(input: &'a str) -> Result<Self, Vec<String>> {
+    pub fn parse(input: &'a str) -> Result<Self, Vec<String>> {
         if input.len() < 1 || &input[0..1] != "(" {
             let non_space_start = consume_chars(&input, |&c| c.is_whitespace());
             let token_len = consume_chars(&input[non_space_start..], is_music_lang_literal);
