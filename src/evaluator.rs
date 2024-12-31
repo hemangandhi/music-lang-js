@@ -87,21 +87,20 @@ impl<'a> Evaluator<'a> {
             parser::SExpr::Expr(bits) => {
                 if bits.len() > 0 {
                     match self.evaluate(&bits[0]) {
-                        Result::Ok(music_lang_object) => {
-                            if let MusicLangObject::SpecialForm(callable) = music_lang_object {
-                                return callable.evaluate(self, expr);
-                            } else {
-                                return Err(MusicLangError {
-                                    message: "First expression value is not callable!".into(),
-                                    context: vec![
-                                        format!("Evaluating {}", bits[0]),
-                                        format!("In expression {}", expr),
-                                    ],
-                                });
-                            }
-                        }
                         Result::Err(error) => {
                             return Err(error.in_context(format!("In expression {}", expr)));
+                        }
+                        Result::Ok(MusicLangObject::SpecialForm(callable)) => {
+                            return callable.evaluate(self, expr)
+                        }
+                        Result::Ok(_) => {
+                            return Err(MusicLangError {
+                                message: "First expression value is not callable!".into(),
+                                context: vec![
+                                    format!("Evaluating {}", bits[0]),
+                                    format!("In expression {}", expr),
+                                ],
+                            });
                         }
                     }
                 }
