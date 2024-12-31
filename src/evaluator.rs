@@ -2,6 +2,7 @@ use crate::parser;
 
 use std::collections::HashMap;
 use std::fmt;
+use std::rc::Rc;
 
 pub trait Note {
     fn duration(&self) -> f64;
@@ -19,12 +20,14 @@ pub trait SpecialForm<'a> {
     ) -> Result<MusicLangObject<'a>, MusicLangError>;
 }
 
+#[derive(Clone)]
 pub enum MusicLangObject<'a> {
     Unevaluated(&'a parser::SExpr<'a>),
     Float(f64),
+    // This is sort of a thorn in making the Clone: but it's a hack for map, so it's ok?
     List(Vec<MusicLangObject<'a>>),
-    SpecialForm(Box<dyn SpecialForm<'a>>),
-    Note(Box<dyn Note>),
+    SpecialForm(Rc<dyn SpecialForm<'a>>),
+    Note(Rc<dyn Note>),
 }
 
 // Would be nice to impl try to add the context here.
