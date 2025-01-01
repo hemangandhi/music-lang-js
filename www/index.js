@@ -243,5 +243,5 @@ function loadDemos(selector_id, editor_txtarea_id) {
     });
 }
 
-makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
-loadDemos("demo-drop-down", "src-txt-area");
+// makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
+// loadDemos("demo-drop-down", "src-txt-area");

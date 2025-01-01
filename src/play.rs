@@ -74,12 +74,14 @@ impl<'a> evaluator::SpecialForm<'a> for Play {
                 Ok(source)
             })
             .map_err(js_value_to_error)?;
+        let forever_closure = Closure::new(move |_j| {
+            source.start().expect("Failed to start playback");
+        });
         self.0
             .resume()
             .map_err(js_value_to_error)?
-            .then(&Closure::new(move |_j| {
-                source.start().expect("Failed to start playback");
-            }));
+            .then(&forever_closure);
+        forever_closure.forget();
 
         Ok(evaluator::MusicLangObject::Wave)
     }

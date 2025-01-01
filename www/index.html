@@ -32,6 +32,9 @@
     </head>
 
     <body>
+
+        <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+        <script src="./bootstrap.js"></script>
         <div id="editor">
             <div>
                 NOTE: if your screen is less than 1000px wide this might be ugly.
@@ -40,7 +43,7 @@
             <textarea id="src-txt-area" cols="60" rows="40"></textarea>
             <div id="err-out-area"></div>
             <button onclick="runMusic('src-txt-area', 'err-out-area')">Play!</button>
-            <button onclick="wasm.test_run_exec()">Play!</button>
+            <button id="play-rs">Play RS!</button>
             <div>
                 Yet another language about music. Check out
                 <a href="https://github.com/hemangandhi/music-lang-js">the underlying Github</a>
@@ -76,8 +79,5 @@
             <div>Here are the known timbres and what they mean:</div>
             <table id="timbres-container"></table>
         </div>
-
-        <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-        <script src="./bootstrap.js"></script>
     </body>
 </html>
