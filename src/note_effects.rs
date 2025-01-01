@@ -3,7 +3,7 @@ use crate::parser;
 
 use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct BasicNote {
     frequency: f32,
     duration: f32,

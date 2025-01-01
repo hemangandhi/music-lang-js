@@ -4,8 +4,6 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
-use web_sys::AudioBufferSourceNode;
-
 trait FlatMapResults<T, U, E> {
     fn flat_map_results(
         self,
@@ -54,7 +52,7 @@ pub enum MusicLangObject<'a> {
     List(Vec<MusicLangObject<'a>>),
     SpecialForm(Rc<dyn SpecialForm<'a>>),
     Note(Rc<dyn Note>),
-    Wave(AudioBufferSourceNode, f32),
+    Wave,
 }
 
 // Would be nice to impl try to add the context here.

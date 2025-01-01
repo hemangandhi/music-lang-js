@@ -3,6 +3,7 @@ use crate::parser;
 
 use std::ops::Deref;
 use std::rc::Rc;
+use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsValue;
 use web_sys::AudioContext;
 
@@ -37,7 +38,7 @@ fn js_value_to_error(e: JsValue) -> evaluator::MusicLangError {
 }
 
 #[derive(Debug)]
-pub struct Play(AudioContext);
+pub struct Play(pub AudioContext);
 
 impl<'a> evaluator::SpecialForm<'a> for Play {
     fn evaluate(
@@ -73,9 +74,13 @@ impl<'a> evaluator::SpecialForm<'a> for Play {
                 Ok(source)
             })
             .map_err(js_value_to_error)?;
-        Ok(evaluator::MusicLangObject::Wave(
-            source,
-            self.0.sample_rate() * (wave.len() as f32),
-        ))
+        self.0
+            .resume()
+            .map_err(js_value_to_error)?
+            .then(&Closure::new(move |_j| {
+                source.start().expect("Failed to start playback");
+            }));
+
+        Ok(evaluator::MusicLangObject::Wave)
     }
 }
