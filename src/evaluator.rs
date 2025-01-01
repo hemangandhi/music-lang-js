@@ -6,6 +6,28 @@ use std::rc::Rc;
 
 use web_sys::AudioBufferSourceNode;
 
+trait FlatMapResults<T, U, E> {
+    fn flat_map_results(
+        self,
+        f: impl FnMut(T) -> Result<Vec<U>, E>,
+    ) -> impl Iterator<Item = Result<U, E>>;
+}
+
+impl<I, T, U, E> FlatMapResults<T, U, E> for I
+where
+    I: Iterator<Item = T> + Sized,
+{
+    fn flat_map_results(
+        self,
+        f: impl FnMut(T) -> Result<Vec<U>, E>,
+    ) -> impl Iterator<Item = Result<U, E>> {
+        self.map(f).flat_map(|res| match res {
+            Result::Ok(ts) => ts.into_iter().map(Result::Ok).collect(),
+            Result::Err(issue) => vec![Err(issue)],
+        })
+    }
+}
+
 pub trait Note: std::fmt::Debug {
     fn duration(&self) -> f32;
 
@@ -52,6 +74,22 @@ impl MusicLangError {
     }
 }
 
+impl<'a> MusicLangObject<'a> {
+    fn get_note_list(&self) -> Result<Vec<Rc<dyn Note>>, MusicLangError> {
+        match self {
+            MusicLangObject::Note(n) => Ok(vec![n.clone()]),
+            MusicLangObject::List(l) => l
+                .iter()
+                .flat_map_results(|o| o.get_note_list())
+                .collect::<Result<Vec<Rc<dyn Note>>, MusicLangError>>(),
+            _ => Err(MusicLangError {
+                message: "Expected to find only notes".into(),
+                context: vec![],
+            }),
+        }
+    }
+}
+
 impl fmt::Display for MusicLangError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -65,8 +103,8 @@ impl fmt::Display for MusicLangError {
 }
 
 pub struct Evaluator<'a> {
-    parent_eval: Option<&'a Evaluator<'a>>,
-    current_scope: HashMap<&'a str, MusicLangObject<'a>>,
+    pub parent_eval: Option<&'a Evaluator<'a>>,
+    pub current_scope: HashMap<&'a str, MusicLangObject<'a>>,
 }
 
 impl<'a> Evaluator<'a> {
@@ -136,15 +174,9 @@ impl<'a> Evaluator<'a> {
         &self,
         bits: impl Iterator<Item = &'a parser::SExpr<'a>>,
     ) -> Result<Vec<Rc<dyn Note>>, MusicLangError> {
-        bits.map(|bit| match self.evaluate(bit) {
-            Result::Err(e) => Err(e),
-            Result::Ok(MusicLangObject::Note(n)) => Ok(n),
-            Result::Ok(_) => Err(MusicLangError {
-                message: format!("Expected {} to parse to a note", bit),
-                context: vec![],
-            }),
-        })
-        .collect::<Result<Vec<Rc<dyn Note>>, MusicLangError>>()
+        bits.map(|bit| self.evaluate(bit))
+            .flat_map_results(|r| r.and_then(|obj| obj.get_note_list()))
+            .collect::<Result<Vec<Rc<dyn Note>>, MusicLangError>>()
     }
 }
 
