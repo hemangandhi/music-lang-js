@@ -126,3 +126,73 @@ impl<'a> evaluator::SpecialForm<'a> for Chord {
         })))
     }
 }
+
+#[derive(Debug, Default)]
+pub struct NoteSeq {
+    notes: Vec<Rc<dyn evaluator::Note>>,
+}
+
+impl evaluator::Note for NoteSeq {
+    fn duration(&self) -> f32 {
+        self.notes
+            .iter()
+            .map(|n| n.duration())
+            .sum()
+    }
+
+    fn frequency(&self, t: f32) -> Vec<f32> {
+        let mut accumulated = 0.0;
+        for note in self.notes.iter() {
+            if accumulated + note.duration() > t {
+                return note.frequency(t - accumulated);
+            }
+            accumulated += note.duration();
+        }
+        return vec![0.0];
+    }
+
+    fn amplitude(&self, t: f32) -> Vec<f32> {
+        let mut accumulated = 0.0;
+        for note in self.notes.iter() {
+            if accumulated + note.duration() > t {
+                return note.amplitude(t - accumulated);
+            }
+            accumulated += note.duration();
+        }
+        return vec![0.0];
+    }
+}
+
+impl document::Documented for NoteSeq {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "note-seq".into(),
+            "(note-seq [notes...])".into(),
+            vec!["note".into(), "notes".into()],
+             "Creates a sequence of notes consecutively.".into(),
+        )
+    }
+}
+
+impl<'a> evaluator::SpecialForm<'a> for NoteSeq {
+    fn evaluate(
+        &self,
+        evaluator: &evaluator::Evaluator<'a>,
+        expr: &'a parser::SExpr<'a>,
+    ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let bits = match expr {
+            parser::SExpr::Literal(literal) => {
+                return Err(evaluator::MusicLangError {
+                    message: format!("Expected a call with arguments, not a literal: {}", literal),
+                    context: vec!["While evaluating a call to note-seq.".into()],
+                })
+            }
+            parser::SExpr::Expr(bits) => bits,
+        };
+        Ok(evaluator::MusicLangObject::Note(Rc::new(NoteSeq {
+            notes: evaluator
+                .eval_note_list(bits.iter().skip(1))
+                .map_err(|e| e.in_context("Evaluating arguments to note-seq.".into()))?,
+        })))
+    }
+}

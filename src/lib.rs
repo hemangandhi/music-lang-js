@@ -31,6 +31,7 @@ impl<'a> MusicLangModel<'a> {
                 )),
                 Rc::new(note_effects::BasicNote::default()),
                 Rc::new(note_effects::Chord::default()),
+                Rc::new(note_effects::NoteSeq::default()),
             ],
         })
     }
