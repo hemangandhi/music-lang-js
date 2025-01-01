@@ -56,7 +56,7 @@
                 <select id="demo-drop-down">
                     <option value="clear" id="clear-demo-option"></option>
                 </select>
-                <button onclick="saveEditorTxt('src-txt-area', 'clear-demo-option')">Save</button>
+                <button id="save-button">Save</button>
             </div>
         </div>
 
@@ -71,7 +71,7 @@
             <table id="docs-container"></table>
             <input type="checkbox" id="format-rm-hints"></input>
             <label for="format-rm-hints">Remove <code>[hints]</code></label>
-            <button onclick="formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints')">Format Code</button>
+            <button id="format-button">Format Code</button>
             <div id="snippets-errors"></div>
         </div>
 

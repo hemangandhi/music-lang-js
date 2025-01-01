@@ -951,8 +951,10 @@ function loadDemos(selector_id, editor_txtarea_id) {
 function loadDoc() {
     makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
     loadDemos("demo-drop-down", "src-txt-area");
-    document.getElementById("play-rs").addEventListener("click", wasm.test_run_exec);
+    document.getElementById("play-rs").addEventListener("click", () => wasm.test_run_exec(document.getElementById('src-txt-area').value));
     document.getElementById("play-js").addEventListener("click", () => runMusic('src-txt-area', 'err-out-area'));
+    document.getElementById("save-button").addEventListener("click", () => saveEditorTxt('src-txt-area', 'clear-demo-option'));
+    document.getElementById("format-button").addEventListener("click", () => formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints'));
 }
 
 if (document.readyState === "complete" || document.readyState === "interactive") {

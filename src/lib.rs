@@ -24,7 +24,7 @@ pub fn greet() {
 
 // TODO: implement. Decide what the actual abstraction for making the PL is?
 // Should the structure of the language be output to JS or just write to the DOM?
-// #[wasm_bindgen]
+#[wasm_bindgen]
 pub fn run_music_lang_code(
     code: &str,
     audio_ctx: AudioContext,
@@ -38,8 +38,8 @@ pub fn run_music_lang_code(
 }
 
 #[wasm_bindgen]
-pub fn test_run_exec() {
-    let parsed = parser::SExpr::parse("(play (note 440 1))").expect("Why it no parse?");
+pub fn test_run_exec(code: &str) {
+    let parsed = parser::SExpr::parse(code).expect("Why it no parse?");
     let evaluator = evaluator::Evaluator {
         parent_eval: None,
         current_scope: HashMap::from([
