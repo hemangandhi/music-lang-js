@@ -1,5 +1,6 @@
 use crate::evaluator;
 use crate::parser;
+use crate::document;
 
 use std::ops::Deref;
 use std::rc::Rc;
@@ -86,3 +87,15 @@ impl<'a> evaluator::SpecialForm<'a> for Play {
         Ok(evaluator::MusicLangObject::Wave)
     }
 }
+
+impl document::Documented for Play {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "play".into(),
+            "(play [notes...])".into(),
+            vec![],
+            "Plays a sequence of notes.".into(),
+        )
+    }
+}
+

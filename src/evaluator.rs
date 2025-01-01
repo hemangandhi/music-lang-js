@@ -1,4 +1,5 @@
 use crate::parser;
+use crate::document;
 
 use std::collections::HashMap;
 use std::fmt;
@@ -34,7 +35,14 @@ pub trait Note: std::fmt::Debug {
     fn amplitude(&self, t: f32) -> Vec<f32>;
 }
 
-pub trait SpecialForm<'a>: std::fmt::Debug {
+// NOTE: we insist on Documented here so that we can make a common global
+// list of all the global special forms. This is either actually not a bad idea,
+// or too-tight a coupling, and we should keep documentation and the special form
+// separate.
+// The issue with separating them now is the common global lists needs dyn Global
+// for Global : Documented + SpecialForm, but then putting a Global in scope needs
+// an upcast, which Rust doesn't have at the time of writing (2025-1-1).
+pub trait SpecialForm<'a>: std::fmt::Debug + document::Documented {
     fn evaluate(
         // NOTE: this self param is useful for callables who'll have their params known at
         // run-time. Most other implementations don't use &self.
@@ -102,7 +110,7 @@ impl fmt::Display for MusicLangError {
 
 pub struct Evaluator<'a> {
     pub parent_eval: Option<&'a Evaluator<'a>>,
-    pub current_scope: HashMap<&'a str, MusicLangObject<'a>>,
+    pub current_scope: HashMap<String, MusicLangObject<'a>>,
 }
 
 impl<'a> Evaluator<'a> {

@@ -1,61 +1,60 @@
+// Core language.
 mod evaluator;
-mod note_effects;
 mod parser;
+
+// Docs base.
+mod document;
+
+// Implementation of bits
+mod note_effects;
 mod play;
+
+// set_panic_hook
 mod utils;
 
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsValue;
-use web_sys::AudioBufferSourceNode;
-use web_sys::AudioContext;
 
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
+struct MusicLangModel<'a> {
+    globals: Vec<Rc<dyn evaluator::SpecialForm<'a>>>,
 }
 
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, music-lang-js!");
-}
+impl<'a> MusicLangModel<'a> {
+    fn make_default_model() -> Result<Self, Vec<String>> {
+        Ok(Self {
+            globals: vec![
+                Rc::new(play::Play(
+                    web_sys::AudioContext::new()
+                        .map_err(|_e| vec!["Couldn't make audio ctx".into()])?,
+                )),
+                Rc::new(note_effects::BasicNote::default()),
+                Rc::new(note_effects::Chord::default()),
+            ],
+        })
+    }
 
-// TODO: implement. Decide what the actual abstraction for making the PL is?
-// Should the structure of the language be output to JS or just write to the DOM?
-#[wasm_bindgen]
-pub fn run_music_lang_code(
-    code: &str,
-    audio_ctx: AudioContext,
-) -> Result<AudioBufferSourceNode, JsValue> {
-    let parsed = parser::SExpr::parse(code);
-    let evaluator = evaluator::Evaluator {
-        parent_eval: None,
-        current_scope: HashMap::from([]),
-    };
-    todo!("Implement the rest of this!")
+    fn get_global_scope(&self) -> HashMap<String, evaluator::MusicLangObject<'a>> {
+        self.globals
+            .iter()
+            .map(|g| {
+                (
+                    g.document().get_name(),
+                    evaluator::MusicLangObject::SpecialForm(g.clone()),
+                )
+            })
+            .collect()
+    }
 }
 
 #[wasm_bindgen]
 pub fn test_run_exec(code: &str) -> Result<(), Vec<String>> {
     let parsed = parser::SExpr::parse(code)?;
+    let model = MusicLangModel::make_default_model()?;
     let evaluator = evaluator::Evaluator {
         parent_eval: None,
-        current_scope: HashMap::from([
-            (
-                "play",
-                evaluator::MusicLangObject::SpecialForm(Rc::new(play::Play(
-                    web_sys::AudioContext::new().expect("Couldn't make audio ctx"),
-                ))),
-            ),
-            (
-                "note",
-                evaluator::MusicLangObject::SpecialForm(
-                    Rc::new(note_effects::BasicNote::default()),
-                ),
-            ),
-        ]),
+        current_scope: model.get_global_scope(),
     };
     evaluator.evaluate(&parsed).map_err(|e| {
         let mut v = vec![e.message];

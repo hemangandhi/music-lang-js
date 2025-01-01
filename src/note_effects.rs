@@ -1,3 +1,4 @@
+use crate::document;
 use crate::evaluator;
 use crate::parser;
 
@@ -20,6 +21,17 @@ impl evaluator::Note for BasicNote {
 
     fn amplitude(&self, _t: f32) -> Vec<f32> {
         vec![1.0]
+    }
+}
+
+impl document::Documented for BasicNote {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "note".into(),
+            "(note [frequency] [duration])".into(),
+            vec!["note".into(), "notes".into()],
+            "Creates a note at a given frequency for a given duration".into(),
+        )
     }
 }
 
@@ -57,7 +69,7 @@ impl<'a> evaluator::SpecialForm<'a> for BasicNote {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Chord {
     notes: Vec<Rc<dyn evaluator::Note>>,
 }
@@ -79,6 +91,18 @@ impl evaluator::Note for Chord {
         self.notes.iter().flat_map(|n| n.amplitude(t)).collect()
     }
 }
+
+impl document::Documented for Chord {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "chord".into(),
+            "(chord [notes...])".into(),
+            vec!["note".into(), "notes".into()],
+            "Creates a chord of given notes (plays them in tandem).".into(),
+        )
+    }
+}
+
 
 impl<'a> evaluator::SpecialForm<'a> for Chord {
     fn evaluate(
