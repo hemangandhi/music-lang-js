@@ -11,7 +11,7 @@ fn compute_wave_for_note(note: &dyn evaluator::Note, sample_rate: f32) -> Vec<f3
     let duration = note.duration();
     (0..(duration * sample_rate + 1.0) as i64)
         .map(|i| {
-            let t = (i as f32) / duration;
+            let t = (i as f32) / sample_rate;
             let ampls = note.amplitude(t);
             let freqs = note.frequency(t);
             freqs
