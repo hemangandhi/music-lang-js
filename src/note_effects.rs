@@ -38,22 +38,18 @@ impl<'a> evaluator::SpecialForm<'a> for BasicNote {
             }
             parser::SExpr::Expr(bits) => bits,
         };
-        let frequency = match evaluator.eval_float(&bits[1]) {
-            Result::Err(error) => {
-                return Err(
-                    error.in_context("While evaluating the frequency parameter of a note".into())
-                )
-            }
-            Result::Ok(f) => f,
-        };
-        let duration = match evaluator.eval_float(&bits[1]) {
-            Result::Err(error) => {
-                return Err(
-                    error.in_context("While evaluating the duration parameter of a note".into())
-                )
-            }
-            Result::Ok(f) => f,
-        };
+        if bits.len() != 3 {
+            return Err(evaluator::MusicLangError {
+                message: format!("Expected 3 arguments, not {}", bits.len()),
+                context: vec!["Evaluating arguments to note.".into()],
+            });
+        }
+        let frequency = evaluator.eval_float(&bits[1]).map_err(|error| {
+            error.in_context("While evaluating the frequency parameter of a note".into())
+        })?;
+        let duration = evaluator.eval_float(&bits[2]).map_err(|error| {
+            error.in_context("While evaluating the duration parameter of a note".into())
+        })?;
         Ok(evaluator::MusicLangObject::Note(Rc::new(BasicNote {
             frequency,
             duration,
@@ -100,18 +96,9 @@ impl<'a> evaluator::SpecialForm<'a> for Chord {
             parser::SExpr::Expr(bits) => bits,
         };
         Ok(evaluator::MusicLangObject::Note(Rc::new(Chord {
-            notes: bits
-                .iter()
-                .skip(1) // bits[0] evaled to "chord"
-                .map(|bit| match evaluator.evaluate(bit) {
-                    Result::Err(e) => Err(e.in_context("Evaluating arguments to chord".into())),
-                    Result::Ok(evaluator::MusicLangObject::Note(n)) => Ok(n),
-                    Result::Ok(_) => Err(evaluator::MusicLangError {
-                        message: format!("Expected {} to parse to a note", bit),
-                        context: vec!["Evaluating arguments to chord.".into()],
-                    }),
-                })
-                .collect::<Result<Vec<Rc<dyn evaluator::Note>>, evaluator::MusicLangError>>()?,
+            notes: evaluator
+                .eval_note_list(bits.iter().skip(1))
+                .map_err(|e| e.in_context("Evaluating arguments to chord.".into()))?,
         })))
     }
 }
