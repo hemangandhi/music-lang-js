@@ -951,7 +951,27 @@ function loadDemos(selector_id, editor_txtarea_id) {
 function loadDoc() {
     makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
     loadDemos("demo-drop-down", "src-txt-area");
-    document.getElementById("play-rs").addEventListener("click", () => wasm.test_run_exec(document.getElementById('src-txt-area').value));
+    document.getElementById("play-rs").addEventListener("click", () => {
+        let errs = ["Success!"];
+        try {
+            wasm.test_run_exec(document.getElementById('src-txt-area').value);
+        } catch(e) {
+            console.error(e);
+            errs = e;
+        }
+        let err_out = document.getElementById('err-out-area');
+        while(err_out.firstChild) err_out.removeChild(err_out.firstChild);
+
+        err_out.appendChild(document.createTextNode(errs[0]));
+        if (errs.length === 1) return;
+        let stacktrace = document.createElement("ol");
+        errs.slice(1).forEach(function (lvl) {
+            let lvl_node = document.createElement("li");
+            lvl_node.appendChild(document.createTextNode(lvl));
+            stacktrace.appendChild(lvl_node);
+        });
+        err_out.appendChild(stacktrace);
+    });
     document.getElementById("play-js").addEventListener("click", () => runMusic('src-txt-area', 'err-out-area'));
     document.getElementById("save-button").addEventListener("click", () => saveEditorTxt('src-txt-area', 'clear-demo-option'));
     document.getElementById("format-button").addEventListener("click", () => formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints'));

@@ -38,8 +38,8 @@ pub fn run_music_lang_code(
 }
 
 #[wasm_bindgen]
-pub fn test_run_exec(code: &str) {
-    let parsed = parser::SExpr::parse(code).expect("Why it no parse?");
+pub fn test_run_exec(code: &str) -> Result<(), Vec<String>> {
+    let parsed = parser::SExpr::parse(code)?;
     let evaluator = evaluator::Evaluator {
         parent_eval: None,
         current_scope: HashMap::from([
@@ -57,5 +57,10 @@ pub fn test_run_exec(code: &str) {
             ),
         ]),
     };
-    evaluator.evaluate(&parsed).expect("Why it not eval?");
+    evaluator.evaluate(&parsed).map_err(|e| {
+        let mut v = vec![e.message];
+        v.extend(e.context);
+        v
+    })?;
+    Ok(())
 }
