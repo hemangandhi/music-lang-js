@@ -868,7 +868,6 @@ function makeDocsTable(table_id, txt_box_id, err_id, timbres_id) {
     table.appendChild(header);
 
     for (let doc of wasm.get_docs_table()) {
-        console.log(doc);
         let row = document.createElement("tr");
         let fn_name = document.createElement("td");
         fn_name.appendChild(document.createTextNode(doc.get_name() + " (Rust version)"));
