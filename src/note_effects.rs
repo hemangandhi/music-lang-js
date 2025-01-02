@@ -57,7 +57,7 @@ impl<'a> evaluator::SpecialForm<'a> for BasicNote {
         let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating note.".into()))?;
         if bits.len() != 3 {
             return Err(evaluator::MusicLangError {
-                message: format!("Expected 3 arguments, not {}", bits.len()),
+                message: format!("Expected 2 arguments, not {}", bits.len()),
                 context: vec!["Evaluating arguments to note.".into()],
             });
         }
@@ -504,6 +504,67 @@ impl<'a> evaluator::SpecialForm<'a> for Vibrato {
             pitch_change,
             num_peaks,
             notes,
+        })))
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Glissando {
+    start_frequency: f32,
+    end_frequency: f32,
+    duration: f32,
+}
+
+impl evaluator::Note for Glissando {
+    fn duration(&self) -> f32 {
+        self.duration
+    }
+
+    fn frequency(&self, t: f32) -> Vec<f32> {
+        vec![self.start_frequency + t * (self.end_frequency - self.start_frequency) / self.duration]
+    }
+
+    fn amplitude(&self, _t: f32) -> Vec<f32> {
+        vec![1.0]
+    }
+}
+
+impl document::Documented for Glissando {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "glissando".into(),
+            "(glissando [frequency] [frequency] [duration])".into(),
+            vec!["note".into(), "notes".into()],
+            "A linear frequency slide from the first pitch to the second".into(),
+        )
+    }
+}
+
+impl<'a> evaluator::SpecialForm<'a> for Glissando {
+    fn evaluate(
+        &self,
+        evaluator: &evaluator::Evaluator<'a>,
+        expr: &'a parser::SExpr<'a>,
+    ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating glissando.".into()))?;
+        if bits.len() != 4 {
+            return Err(evaluator::MusicLangError {
+                message: format!("Expected 3 arguments, not {}", bits.len()),
+                context: vec!["Evaluating arguments to glissando.".into()],
+            });
+        }
+        let start_frequency = evaluator.eval_float(&bits[1]).map_err(|error| {
+            error.in_context("While evaluating the start frequency parameter of a glissando".into())
+        })?;
+        let end_frequency = evaluator.eval_float(&bits[2]).map_err(|error| {
+            error.in_context("While evaluating the end frequency parameter of a glissando".into())
+        })?;
+        let duration = evaluator.eval_float(&bits[3]).map_err(|error| {
+            error.in_context("While evaluating the duration parameter of a glissando".into())
+        })?;
+        Ok(evaluator::MusicLangObject::Note(Rc::new(Self {
+            start_frequency, end_frequency,
+            duration,
         })))
     }
 }
