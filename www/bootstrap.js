@@ -782,7 +782,7 @@ function makeSnippetClicker(err_id, txt_box_id, snippets_targets, snippet) {
     return function(event) {
         document.getElementById(err_id).innerText = "";
         let text = document.getElementById(txt_box_id).value;
-        if (!text && !snippets_targets) {
+        if (!text && (!snippets_targets || snippets_targets.length === 0)) {
             document.getElementById(txt_box_id).value = snippet;
             return;
         } else if (!snippets_targets) {
