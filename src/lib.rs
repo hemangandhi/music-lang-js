@@ -25,10 +25,11 @@ impl<'a> MusicLangModel<'a> {
     fn make_default_model() -> Result<Self, Vec<String>> {
         Ok(Self {
             globals: vec![
-                Rc::new(play::Play()),
+                Rc::new(play::Play),
                 Rc::new(note_effects::BasicNote::default()),
                 Rc::new(note_effects::Chord::default()),
                 Rc::new(note_effects::NoteSeq::default()),
+                Rc::new(note_effects::PitchAt),
             ],
         })
     }

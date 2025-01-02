@@ -38,7 +38,7 @@ fn js_value_to_error(e: JsValue) -> evaluator::MusicLangError {
 }
 
 #[derive(Debug)]
-pub struct Play();
+pub struct Play;
 
 impl<'a> evaluator::SpecialForm<'a> for Play {
     fn evaluate(
