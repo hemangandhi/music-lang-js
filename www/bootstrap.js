@@ -182,6 +182,37 @@ const known_timbres = {
 };
 
 
+function HandleRustErrors(fn, reportSuccess) {
+    return function () {
+        let errs = (reportSuccess)? ["Success!"] : [];
+        try {
+            fn();
+        } catch (e) {
+            if (!Array.isArray(e)) {
+                throw e;
+            }
+            console.error(e);
+            errs = e;
+        }
+        if (errs.length === 0) return;
+
+        let err_out = document.getElementById('err-out-area');
+        // Clear past error.
+        while(err_out.firstChild) err_out.removeChild(err_out.firstChild);
+
+        err_out.appendChild(document.createTextNode(errs[0]));
+        if (errs.length === 1) return;
+        let stacktrace = document.createElement("ol");
+        errs.slice(1).forEach(function (lvl) {
+            let lvl_node = document.createElement("li");
+            lvl_node.appendChild(document.createTextNode(lvl));
+            stacktrace.appendChild(lvl_node);
+        });
+        err_out.appendChild(stacktrace);
+    };
+}
+
+
 function Error(msg, trigger) {
     this.apply = function (args) {
         return new Error("Calling uncallable 'error':" + this.message, this);
@@ -836,6 +867,29 @@ function makeDocsTable(table_id, txt_box_id, err_id, timbres_id) {
     header.appendChild(col3);
     table.appendChild(header);
 
+    for (let doc of wasm.get_docs_table()) {
+        console.log(doc);
+        let row = document.createElement("tr");
+        let fn_name = document.createElement("td");
+        fn_name.appendChild(document.createTextNode(doc.get_name() + " (Rust version)"));
+        let fn = document.createElement("td");
+        let fn_snip = document.createElement("code");
+        fn_snip.appendChild(document.createTextNode(doc.get_snippet()));
+        fn.appendChild(fn_snip);
+        fn.classList.add("func-name");
+        fn.addEventListener("click", makeSnippetClicker(err_id, txt_box_id, doc.get_snippet_targets(), doc.get_snippet()));
+
+        // add that row to the table
+        let docs = document.createElement("td");
+        docs.appendChild(document.createTextNode(doc.get_details()));
+        row.appendChild(fn_name);
+        row.appendChild(fn);
+        row.appendChild(docs);
+        table.appendChild(row);
+        // Yeah, there's now memory management in my JS?
+        doc.free();
+    }
+
     // each row
     Object.keys(global_variables).forEach(function (global_var) {
         let global = global_variables[global_var];
@@ -948,39 +1002,21 @@ function loadDemos(selector_id, editor_txtarea_id) {
     });
 }
 
-function loadDoc() {
-    makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container");
+function onPageLoad() {
+    HandleRustErrors(() => makeDocsTable("docs-container", "src-txt-area", "snippets-errors", "timbres-container"), false)();
     loadDemos("demo-drop-down", "src-txt-area");
-    document.getElementById("play-rs").addEventListener("click", () => {
-        let errs = ["Success!"];
-        try {
-            wasm.test_run_exec(document.getElementById('src-txt-area').value);
-        } catch(e) {
-            console.error(e);
-            errs = e;
-        }
-        let err_out = document.getElementById('err-out-area');
-        while(err_out.firstChild) err_out.removeChild(err_out.firstChild);
-
-        err_out.appendChild(document.createTextNode(errs[0]));
-        if (errs.length === 1) return;
-        let stacktrace = document.createElement("ol");
-        errs.slice(1).forEach(function (lvl) {
-            let lvl_node = document.createElement("li");
-            lvl_node.appendChild(document.createTextNode(lvl));
-            stacktrace.appendChild(lvl_node);
-        });
-        err_out.appendChild(stacktrace);
-    });
+    document.getElementById("play-rs").addEventListener("click", HandleRustErrors(() => {
+        wasm.test_run_exec(document.getElementById('src-txt-area').value);
+    }, true));
     document.getElementById("play-js").addEventListener("click", () => runMusic('src-txt-area', 'err-out-area'));
     document.getElementById("save-button").addEventListener("click", () => saveEditorTxt('src-txt-area', 'clear-demo-option'));
     document.getElementById("format-button").addEventListener("click", () => formatCode('src-txt-area', 'snippets-errors', 'format-rm-hints'));
 }
 
 if (document.readyState === "complete" || document.readyState === "interactive") {
-    setTimeout(loadDoc, 1);
+    setTimeout(onPageLoad, 1);
 } else {
-    document.addEventListener("DOMContentLoaded", loadDoc);
+    document.addEventListener("DOMContentLoaded", onPageLoad);
 }
 
 

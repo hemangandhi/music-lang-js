@@ -1,12 +1,11 @@
+use crate::document;
 use crate::evaluator;
 use crate::parser;
-use crate::document;
 
 use std::ops::Deref;
 use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsValue;
-use web_sys::AudioContext;
 
 fn compute_wave_for_note(note: &dyn evaluator::Note, sample_rate: f32) -> Vec<f32> {
     let duration = note.duration();
@@ -39,7 +38,7 @@ fn js_value_to_error(e: JsValue) -> evaluator::MusicLangError {
 }
 
 #[derive(Debug)]
-pub struct Play(pub AudioContext);
+pub struct Play();
 
 impl<'a> evaluator::SpecialForm<'a> for Play {
     fn evaluate(
@@ -47,6 +46,8 @@ impl<'a> evaluator::SpecialForm<'a> for Play {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let audio_ctx = web_sys::AudioContext::new().map_err(js_value_to_error)?;
+
         let notes = match expr {
             parser::SExpr::Literal(l) => {
                 return Err(evaluator::MusicLangError {
@@ -58,27 +59,25 @@ impl<'a> evaluator::SpecialForm<'a> for Play {
                 .eval_note_list(e.iter().skip(1))
                 .map_err(|e| e.in_context("Evaluating play".into()))?,
         };
-        let wave = compute_wave_for_notes(&notes, self.0.sample_rate());
-        let buffer = self
-            .0
-            .create_buffer(1, wave.len() as u32, self.0.sample_rate())
+        let wave = compute_wave_for_notes(&notes, audio_ctx.sample_rate());
+        let buffer = audio_ctx
+            .create_buffer(1, wave.len() as u32, audio_ctx.sample_rate())
             .map_err(js_value_to_error)?;
         buffer
             .copy_to_channel(wave.as_slice(), 0)
             .map_err(js_value_to_error)?;
-        let source = self
-            .0
+        let source = audio_ctx
             .create_buffer_source()
             .and_then(|source| {
                 source.set_buffer(Some(&buffer));
-                source.connect_with_audio_node(self.0.destination().deref())?;
+                source.connect_with_audio_node(audio_ctx.destination().deref())?;
                 Ok(source)
             })
             .map_err(js_value_to_error)?;
         let forever_closure = Closure::new(move |_j| {
             source.start().expect("Failed to start playback");
         });
-        self.0
+        let _ = audio_ctx
             .resume()
             .map_err(js_value_to_error)?
             .then(&forever_closure);
@@ -98,4 +97,3 @@ impl document::Documented for Play {
         )
     }
 }
-

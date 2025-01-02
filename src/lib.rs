@@ -25,10 +25,7 @@ impl<'a> MusicLangModel<'a> {
     fn make_default_model() -> Result<Self, Vec<String>> {
         Ok(Self {
             globals: vec![
-                Rc::new(play::Play(
-                    web_sys::AudioContext::new()
-                        .map_err(|_e| vec!["Couldn't make audio ctx".into()])?,
-                )),
+                Rc::new(play::Play()),
                 Rc::new(note_effects::BasicNote::default()),
                 Rc::new(note_effects::Chord::default()),
                 Rc::new(note_effects::NoteSeq::default()),
@@ -47,6 +44,12 @@ impl<'a> MusicLangModel<'a> {
             })
             .collect()
     }
+}
+
+#[wasm_bindgen]
+pub fn get_docs_table() -> Result<Vec<document::Documentation>, Vec<String>> {
+    let model = MusicLangModel::make_default_model()?;
+    Ok(model.globals.iter().map(|g| g.document()).collect())
 }
 
 #[wasm_bindgen]
