@@ -5,6 +5,18 @@ use crate::parser;
 use std::convert::TryInto;
 use std::rc::Rc;
 
+fn get_expr<'a>(
+    expr: &'a parser::SExpr<'a>,
+) -> Result<&'a Vec<parser::SExpr<'a>>, evaluator::MusicLangError> {
+    match expr {
+        parser::SExpr::Literal(literal) => Err(evaluator::MusicLangError {
+            message: format!("Expected a call with arguments, not a literal: {}", literal),
+            context: vec![],
+        }),
+        parser::SExpr::Expr(bits) => Ok(bits),
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct BasicNote {
     frequency: f32,
@@ -42,15 +54,7 @@ impl<'a> evaluator::SpecialForm<'a> for BasicNote {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = match expr {
-            parser::SExpr::Literal(literal) => {
-                return Err(evaluator::MusicLangError {
-                    message: format!("Expected a call with arguments, not a literal: {}", literal),
-                    context: vec!["While evaluating a call to note.".into()],
-                })
-            }
-            parser::SExpr::Expr(bits) => bits,
-        };
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating note.".into()))?;
         if bits.len() != 3 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 3 arguments, not {}", bits.len()),
@@ -110,15 +114,7 @@ impl<'a> evaluator::SpecialForm<'a> for Chord {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = match expr {
-            parser::SExpr::Literal(literal) => {
-                return Err(evaluator::MusicLangError {
-                    message: format!("Expected a call with arguments, not a literal: {}", literal),
-                    context: vec!["While evaluating a call to chord.".into()],
-                })
-            }
-            parser::SExpr::Expr(bits) => bits,
-        };
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating chord.".into()))?;
         Ok(evaluator::MusicLangObject::Note(Rc::new(Chord {
             notes: evaluator
                 .eval_note_list(bits.iter().skip(1))
@@ -127,9 +123,36 @@ impl<'a> evaluator::SpecialForm<'a> for Chord {
     }
 }
 
+fn get_note_in_sequence_at_t(
+    notes: &Vec<Rc<dyn evaluator::Note>>,
+    t: f32,
+) -> Option<(&Rc<dyn evaluator::Note>, f32)> {
+    let mut accumulated = 0.0;
+    for note in notes.iter() {
+        if accumulated + note.duration() > t {
+            return Some((note, t - accumulated));
+        }
+        accumulated += note.duration();
+    }
+    None
+}
+
 #[derive(Debug, Default)]
 pub struct NoteSeq {
     notes: Vec<Rc<dyn evaluator::Note>>,
+}
+
+impl<'a> NoteSeq {
+    fn from_bits(
+        bits: impl Iterator<Item = &'a parser::SExpr<'a>>,
+        evaluator: &evaluator::Evaluator<'a>,
+    ) -> Result<NoteSeq, evaluator::MusicLangError> {
+        Ok(NoteSeq {
+            notes: evaluator
+                .eval_note_list(bits)
+                .map_err(|e| e.in_context("Evaluating arguments to note-seq.".into()))?,
+        })
+    }
 }
 
 impl evaluator::Note for NoteSeq {
@@ -138,25 +161,15 @@ impl evaluator::Note for NoteSeq {
     }
 
     fn frequency(&self, t: f32) -> Vec<f32> {
-        let mut accumulated = 0.0;
-        for note in self.notes.iter() {
-            if accumulated + note.duration() > t {
-                return note.frequency(t - accumulated);
-            }
-            accumulated += note.duration();
-        }
-        return vec![0.0];
+        get_note_in_sequence_at_t(&self.notes, t)
+            .map(|(n, tt)| n.frequency(tt))
+            .unwrap_or(vec![0.0])
     }
 
     fn amplitude(&self, t: f32) -> Vec<f32> {
-        let mut accumulated = 0.0;
-        for note in self.notes.iter() {
-            if accumulated + note.duration() > t {
-                return note.amplitude(t - accumulated);
-            }
-            accumulated += note.duration();
-        }
-        return vec![0.0];
+        get_note_in_sequence_at_t(&self.notes, t)
+            .map(|(n, tt)| n.amplitude(tt))
+            .unwrap_or(vec![0.0])
     }
 }
 
@@ -177,20 +190,10 @@ impl<'a> evaluator::SpecialForm<'a> for NoteSeq {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = match expr {
-            parser::SExpr::Literal(literal) => {
-                return Err(evaluator::MusicLangError {
-                    message: format!("Expected a call with arguments, not a literal: {}", literal),
-                    context: vec!["While evaluating a call to note-seq.".into()],
-                })
-            }
-            parser::SExpr::Expr(bits) => bits,
-        };
-        Ok(evaluator::MusicLangObject::Note(Rc::new(NoteSeq {
-            notes: evaluator
-                .eval_note_list(bits.iter().skip(1))
-                .map_err(|e| e.in_context("Evaluating arguments to note-seq.".into()))?,
-        })))
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating note-seq".into()))?;
+        Ok(evaluator::MusicLangObject::Note(Rc::new(
+            NoteSeq::from_bits(bits.iter().skip(1), evaluator)?,
+        )))
     }
 }
 
@@ -214,15 +217,7 @@ impl<'a> evaluator::SpecialForm<'a> for PitchAt {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = match expr {
-            parser::SExpr::Literal(literal) => {
-                return Err(evaluator::MusicLangError {
-                    message: format!("Expected a call with arguments, not a literal: {}", literal),
-                    context: vec!["While evaluating a call to note-seq.".into()],
-                })
-            }
-            parser::SExpr::Expr(bits) => bits,
-        };
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating pitch-at.".into()))?;
         if bits.len() != 3 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 3 arguments, not {}", bits.len()),
@@ -294,5 +289,98 @@ impl<'a> evaluator::SpecialForm<'a> for PitchAt {
         Ok(evaluator::MusicLangObject::Float(
             440.0_f32 * 2.0_f32.powf((tone_number as f32) / 12.0 + octave - 4.0),
         ))
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct WithADSR {
+    max_attack: f32,
+    decay_start: f32,
+    sustain_start: f32,
+    sustain_volume: f32,
+    release_start: f32,
+    notes: NoteSeq,
+}
+
+impl evaluator::Note for WithADSR {
+    fn duration(&self) -> f32 {
+        self.notes.duration()
+    }
+
+    fn frequency(&self, t: f32) -> Vec<f32> {
+        self.notes.frequency(t)
+    }
+
+    fn amplitude(&self, t: f32) -> Vec<f32> {
+        let ratio = t / self.duration();
+        let scaling = if ratio < self.decay_start {
+            ratio * self.max_attack / self.decay_start
+        } else if ratio < self.sustain_start {
+            let slope =
+                (self.sustain_volume - self.max_attack) / (self.sustain_start - self.decay_start);
+            slope * (ratio - self.decay_start) + self.max_attack
+        } else if ratio < self.release_start {
+            self.sustain_volume
+        } else {
+            let slope = self.sustain_volume / (self.release_start - 1.0);
+            slope * (ratio - self.release_start) + self.sustain_volume
+        };
+        self.notes
+            .amplitude(t)
+            .iter()
+            .map(|amp| amp * scaling)
+            .collect()
+    }
+}
+
+impl document::Documented for WithADSR {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "with-adsr".into(),
+             "(with-adsr [a-volume-max] [d-start-time] [s-start-time] [s-volume] [r-start-time] [note])".into(),
+            vec!["note".into(), "notes".into()],
+              "Wraps a note in an ADSR envelope. The timings are represented relative to the duration of the note and volume scaling the volume of the note.".into(),
+        )
+    }
+}
+
+impl<'a> evaluator::SpecialForm<'a> for WithADSR {
+    fn evaluate(
+        &self,
+        evaluator: &evaluator::Evaluator<'a>,
+        expr: &'a parser::SExpr<'a>,
+    ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating with-adsr".into()))?;
+        if bits.len() < 6 {
+            return Err(evaluator::MusicLangError {
+                message: format!("Expected 6 or more arguments instead of {}", bits.len()),
+                context: vec!["Evaluating with-adsr".into()],
+            });
+        }
+        let max_attack = evaluator
+            .eval_float(&bits[1])
+            .map_err(|e| e.in_context("Evaluating the first argument to with-adsr".into()))?;
+        let decay_start = evaluator
+            .eval_float(&bits[2])
+            .map_err(|e| e.in_context("Evaluating the second argument to with-adsr".into()))?;
+        let sustain_start = evaluator
+            .eval_float(&bits[3])
+            .map_err(|e| e.in_context("Evaluating the third argument to with-adsr".into()))?;
+        let sustain_volume = evaluator
+            .eval_float(&bits[4])
+            .map_err(|e| e.in_context("Evaluating the fourth argument to with-adsr".into()))?;
+        let release_start = evaluator
+            .eval_float(&bits[5])
+            .map_err(|e| e.in_context("Evaluating the fifth argument to with-adsr".into()))?;
+        let notes = NoteSeq::from_bits(bits.iter().skip(6), evaluator)
+            .map_err(|e| e.in_context("Evaluating the trailing arguments to with-adrs".into()))?;
+        Ok(evaluator::MusicLangObject::SpecialForm(Rc::new(Self {
+            max_attack,
+            decay_start,
+            sustain_start,
+            sustain_volume,
+            release_start,
+            notes,
+        })))
     }
 }
