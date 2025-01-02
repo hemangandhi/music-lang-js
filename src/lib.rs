@@ -34,6 +34,7 @@ impl<'a> MusicLangModel<'a> {
                 Rc::new(note_effects::WithBPM::default()),
                 Rc::new(note_effects::Vibrato::default()),
                 Rc::new(note_effects::Glissando::default()),
+                Rc::new(note_effects::Rest::default()),
             ],
         })
     }

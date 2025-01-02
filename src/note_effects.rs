@@ -563,8 +563,59 @@ impl<'a> evaluator::SpecialForm<'a> for Glissando {
             error.in_context("While evaluating the duration parameter of a glissando".into())
         })?;
         Ok(evaluator::MusicLangObject::Note(Rc::new(Self {
-            start_frequency, end_frequency,
+            start_frequency,
+            end_frequency,
             duration,
         })))
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Rest {
+    duration: f32,
+}
+
+impl evaluator::Note for Rest {
+    fn duration(&self) -> f32 {
+        self.duration
+    }
+
+    fn frequency(&self, _t: f32) -> Vec<f32> {
+        vec![0.0]
+    }
+
+    fn amplitude(&self, _t: f32) -> Vec<f32> {
+        vec![1.0]
+    }
+}
+
+impl document::Documented for Rest {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "rest".into(),
+            "(rest [duration])".into(),
+            vec!["note".into(), "notes".into()],
+            "A silence for the provided beats.".into(),
+        )
+    }
+}
+
+impl<'a> evaluator::SpecialForm<'a> for Rest {
+    fn evaluate(
+        &self,
+        evaluator: &evaluator::Evaluator<'a>,
+        expr: &'a parser::SExpr<'a>,
+    ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating rest.".into()))?;
+        if bits.len() != 2 {
+            return Err(evaluator::MusicLangError {
+                message: format!("Expected 1 arguments, not {}", bits.len()),
+                context: vec!["Evaluating arguments to rest.".into()],
+            });
+        }
+        let duration = evaluator.eval_float(&bits[1]).map_err(|error| {
+            error.in_context("While evaluating the duration parameter of a rest".into())
+        })?;
+        Ok(evaluator::MusicLangObject::Note(Rc::new(Self { duration })))
     }
 }
