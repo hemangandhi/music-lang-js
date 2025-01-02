@@ -440,3 +440,70 @@ impl<'a> evaluator::SpecialForm<'a> for WithBPM {
         })))
     }
 }
+
+#[derive(Debug, Default)]
+pub struct Vibrato {
+    pitch_change: f32,
+    num_peaks: f32,
+    notes: NoteSeq,
+}
+
+impl evaluator::Note for Vibrato {
+    fn duration(&self) -> f32 {
+        self.notes.duration()
+    }
+
+    fn frequency(&self, t: f32) -> Vec<f32> {
+        self.notes
+            .frequency(t)
+            .iter()
+            .map(|f| {
+                f + (t * self.num_peaks * 2.0 * std::f32::consts::PI).cos() * self.pitch_change
+            })
+            .collect()
+    }
+
+    fn amplitude(&self, t: f32) -> Vec<f32> {
+        self.notes.amplitude(t)
+    }
+}
+
+impl document::Documented for Vibrato {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "vibrato".into(),
+             "(vibrato [pitch-change] [num-peaks] [note])".into(),
+            vec!["note".into(), "notes".into()],
+              "An oscillation of pitch that varies by the change, hitting the highest peak the provided number of times.".into(),
+        )
+    }
+}
+
+impl<'a> evaluator::SpecialForm<'a> for Vibrato {
+    fn evaluate(
+        &self,
+        evaluator: &evaluator::Evaluator<'a>,
+        expr: &'a parser::SExpr<'a>,
+    ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating vibrato".into()))?;
+        if bits.len() < 3 {
+            return Err(evaluator::MusicLangError {
+                message: format!("Expected 3 or more arguments instead of {}", bits.len()),
+                context: vec!["Evaluating vibrato".into()],
+            });
+        }
+        let pitch_change = evaluator
+            .eval_float(&bits[1])
+            .map_err(|e| e.in_context("Evaluating the first argument to vibrato".into()))?;
+        let num_peaks = evaluator
+            .eval_float(&bits[1])
+            .map_err(|e| e.in_context("Evaluating the second argument to vibrato".into()))?;
+        let notes = NoteSeq::from_bits(bits.iter().skip(3), evaluator)
+            .map_err(|e| e.in_context("Evaluating the trailing arguments to vibrato".into()))?;
+        Ok(evaluator::MusicLangObject::SpecialForm(Rc::new(Self {
+            pitch_change,
+            num_peaks,
+            notes,
+        })))
+    }
+}
