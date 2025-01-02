@@ -1,5 +1,5 @@
-use crate::parser;
 use crate::document;
+use crate::parser;
 
 use std::collections::HashMap;
 use std::fmt;
@@ -186,6 +186,18 @@ impl<'a> Evaluator<'a> {
     }
 }
 
+pub fn get_expr<'a>(
+    expr: &'a parser::SExpr<'a>,
+) -> Result<&'a Vec<parser::SExpr<'a>>, MusicLangError> {
+    match expr {
+        parser::SExpr::Literal(literal) => Err(MusicLangError {
+            message: format!("Expected a call with arguments, not a literal: {}", literal),
+            context: vec![],
+        }),
+        parser::SExpr::Expr(bits) => Ok(bits),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -217,7 +229,7 @@ mod tests {
         let parsed_pi_getting_called = parser::SExpr::parse("(PI)").expect("Couldn't parse (PI)");
         let empty_eval = Evaluator {
             parent_eval: None,
-            current_scope: HashMap::from([("PI", MusicLangObject::Float(3.14))]),
+            current_scope: HashMap::from([("PI".into(), MusicLangObject::Float(3.14))]),
         };
         let evaled = empty_eval.evaluate(&parsed_literal).unwrap();
         if let MusicLangObject::Float(f) = evaled {
@@ -250,7 +262,7 @@ mod tests {
         let parsed_pi_getting_called = parser::SExpr::parse("(PI)").expect("Couldn't parse (PI)");
         let empty_eval = Evaluator {
             parent_eval: None,
-            current_scope: HashMap::from([("PI", MusicLangObject::Float(3.14))]),
+            current_scope: HashMap::from([("PI".into(), MusicLangObject::Float(3.14))]),
         };
         let evaled = empty_eval.eval_float(&parsed_literal).unwrap();
         assert!(1.72 - f32::EPSILON < evaled && evaled < 1.72 + f32::EPSILON);

@@ -5,18 +5,6 @@ use crate::parser;
 use std::convert::TryInto;
 use std::rc::Rc;
 
-fn get_expr<'a>(
-    expr: &'a parser::SExpr<'a>,
-) -> Result<&'a Vec<parser::SExpr<'a>>, evaluator::MusicLangError> {
-    match expr {
-        parser::SExpr::Literal(literal) => Err(evaluator::MusicLangError {
-            message: format!("Expected a call with arguments, not a literal: {}", literal),
-            context: vec![],
-        }),
-        parser::SExpr::Expr(bits) => Ok(bits),
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct BasicNote {
     frequency: f32,
@@ -54,7 +42,8 @@ impl<'a> evaluator::SpecialForm<'a> for BasicNote {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating note.".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating note.".into()))?;
         if bits.len() != 3 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 2 arguments, not {}", bits.len()),
@@ -114,7 +103,8 @@ impl<'a> evaluator::SpecialForm<'a> for Chord {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating chord.".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating chord.".into()))?;
         Ok(evaluator::MusicLangObject::Note(Rc::new(Chord {
             notes: evaluator
                 .eval_note_list(bits.iter().skip(1))
@@ -190,7 +180,8 @@ impl<'a> evaluator::SpecialForm<'a> for NoteSeq {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating note-seq".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating note-seq".into()))?;
         Ok(evaluator::MusicLangObject::Note(Rc::new(
             NoteSeq::from_bits(bits.iter().skip(1), evaluator)?,
         )))
@@ -217,7 +208,8 @@ impl<'a> evaluator::SpecialForm<'a> for PitchAt {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating pitch-at.".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating pitch-at.".into()))?;
         if bits.len() != 3 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 3 arguments, not {}", bits.len()),
@@ -350,7 +342,8 @@ impl<'a> evaluator::SpecialForm<'a> for WithADSR {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating with-adsr".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating with-adsr".into()))?;
         if bits.len() < 6 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 6 or more arguments instead of {}", bits.len()),
@@ -422,7 +415,8 @@ impl<'a> evaluator::SpecialForm<'a> for WithBPM {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating with-bpm".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating with-bpm".into()))?;
         if bits.len() < 2 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 2 or more arguments instead of {}", bits.len()),
@@ -485,7 +479,8 @@ impl<'a> evaluator::SpecialForm<'a> for Vibrato {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating vibrato".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating vibrato".into()))?;
         if bits.len() < 3 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 3 or more arguments instead of {}", bits.len()),
@@ -546,7 +541,8 @@ impl<'a> evaluator::SpecialForm<'a> for Glissando {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating glissando.".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating glissando.".into()))?;
         if bits.len() != 4 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 3 arguments, not {}", bits.len()),
@@ -606,7 +602,8 @@ impl<'a> evaluator::SpecialForm<'a> for Rest {
         evaluator: &evaluator::Evaluator<'a>,
         expr: &'a parser::SExpr<'a>,
     ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
-        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating rest.".into()))?;
+        let bits =
+            evaluator::get_expr(expr).map_err(|e| e.in_context("Evaluating rest.".into()))?;
         if bits.len() != 2 {
             return Err(evaluator::MusicLangError {
                 message: format!("Expected 1 arguments, not {}", bits.len()),
