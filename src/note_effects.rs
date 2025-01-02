@@ -373,13 +373,69 @@ impl<'a> evaluator::SpecialForm<'a> for WithADSR {
             .eval_float(&bits[5])
             .map_err(|e| e.in_context("Evaluating the fifth argument to with-adsr".into()))?;
         let notes = NoteSeq::from_bits(bits.iter().skip(6), evaluator)
-            .map_err(|e| e.in_context("Evaluating the trailing arguments to with-adrs".into()))?;
+            .map_err(|e| e.in_context("Evaluating the trailing arguments to with-adsr".into()))?;
         Ok(evaluator::MusicLangObject::SpecialForm(Rc::new(Self {
             max_attack,
             decay_start,
             sustain_start,
             sustain_volume,
             release_start,
+            notes,
+        })))
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct WithBPM {
+    bpm: f32,
+    notes: NoteSeq,
+}
+
+impl evaluator::Note for WithBPM {
+    fn duration(&self) -> f32 {
+        self.notes.duration() * 60.0 / self.bpm
+    }
+
+    fn frequency(&self, t: f32) -> Vec<f32> {
+        self.notes.frequency(t * 60.0 / self.bpm)
+    }
+
+    fn amplitude(&self, t: f32) -> Vec<f32> {
+        self.notes.amplitude(t * 60.0 / self.bpm)
+    }
+}
+
+impl document::Documented for WithBPM {
+    fn document(&self) -> document::Documentation {
+        document::Documentation::from_rs(
+            "with-bpm".into(),
+             "(with-bpm [bpm] [notes...])".into(),
+            vec!["note".into(), "notes".into()],
+              "Shifts the time to be measured at the given beats per minute (default is 60). The notes are played in sequence (so (with-bpm b (note-seq notes...))) is the same as (with-bpm b notes...).".into(),
+        )
+    }
+}
+
+impl<'a> evaluator::SpecialForm<'a> for WithBPM {
+    fn evaluate(
+        &self,
+        evaluator: &evaluator::Evaluator<'a>,
+        expr: &'a parser::SExpr<'a>,
+    ) -> Result<evaluator::MusicLangObject<'a>, evaluator::MusicLangError> {
+        let bits = get_expr(expr).map_err(|e| e.in_context("Evaluating with-bpm".into()))?;
+        if bits.len() < 2 {
+            return Err(evaluator::MusicLangError {
+                message: format!("Expected 2 or more arguments instead of {}", bits.len()),
+                context: vec!["Evaluating with-bpm".into()],
+            });
+        }
+        let bpm = evaluator
+            .eval_float(&bits[1])
+            .map_err(|e| e.in_context("Evaluating the first argument to with-bpm".into()))?;
+        let notes = NoteSeq::from_bits(bits.iter().skip(2), evaluator)
+            .map_err(|e| e.in_context("Evaluating the trailing arguments to with-bpm".into()))?;
+        Ok(evaluator::MusicLangObject::SpecialForm(Rc::new(Self {
+            bpm,
             notes,
         })))
     }
