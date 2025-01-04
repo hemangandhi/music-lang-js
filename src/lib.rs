@@ -8,6 +8,7 @@ mod document;
 // Implementation of bits
 mod note_effects;
 mod play;
+mod timbres;
 
 // set_panic_hook
 mod utils;

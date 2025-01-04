@@ -133,7 +133,7 @@ pub struct NoteSeq {
 }
 
 impl<'a> NoteSeq {
-    fn from_bits(
+    pub fn from_bits(
         bits: impl Iterator<Item = &'a parser::SExpr<'a>>,
         evaluator: &evaluator::Evaluator<'a>,
     ) -> Result<NoteSeq, evaluator::MusicLangError> {
