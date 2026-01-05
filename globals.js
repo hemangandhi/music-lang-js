@@ -69,6 +69,8 @@ function addADSR(note, a_vol, d_start, s_start, s_vol, r_start) {
     });
 }
 
+// Get a note in a sequence of notes.
+// Returns the index of the note and what time the note had started at.
 function getNoteInSeq(notes, t) {
     let start = 0, i = 0;
     for(; i < notes.length && t > start + notes[i].duration;
@@ -118,6 +120,45 @@ function applyKnownTimbre(known, include_adsr, args) {
     });
 }
 
+function repeatCallable(args) {
+    if (args.length < 1)
+        return new Error("repeat needs at least one argument, not the " + args.length + " provided", args);
+    let times = parseInt(args[0]);
+    if (times <= 0)
+        return new Error("repeat's number of times needs to be a positive integer, not the " + args[0] + " provided", args);
+    let notes = flattenMusicLangListsIn(args.slice(1));
+    let total_duration = 0;
+    let e = null;
+    if(notes.some(function(arg) {
+        if(!isNote(arg)) {
+            e = arg;
+            return true;
+        }
+        total_duration += arg.duration;
+        return false;
+    })) {
+        return new Error("All arguments to must be a note.", e);
+    }
+
+    return new PureNote(function (t) {
+        let got_note = getNoteInSeq(notes, t);
+        while (t > 0 && got_note[0] >= notes.length) {
+            t -= total_duration;
+            got_note = getNoteInSeq(notes, t);
+        }
+        if (t <= 0) return [0];
+        return notes[got_note[0]].freq_of_t(t - got_note[1]);
+    }, total_duration * times, function(t) {
+        let got_note = getNoteInSeq(notes, t);
+        while (t > 0 && got_note[0] >= notes.length) {
+            t -= total_duration;
+            got_note = getNoteInSeq(notes, t);
+        }
+        if (t <= 0) return [0];
+        return notes[got_note[0]].ampl_of_t(t - got_note[1]);
+    });
+}
+
 const global_variables = {
     "play": new Callable(function (args) {
         args = flattenMusicLangListsIn(args);
@@ -141,7 +182,7 @@ const global_variables = {
             source.buffer = snd_buffer;
             source.connect(audio_ctx.destination);
             source.start();
-            source.stop(total_time);
+            source.stop(total_time * 1.1); // TODO: figure out why?
             console.log("done playing. Time: " + total_time);
         });
         return new Result();
@@ -196,29 +237,9 @@ const global_variables = {
         });
     }, "Creates a chord of given notes (plays them in tandem)", "(chord [notes...])", ["note", "notes"]),
     "note-seq": new Callable(function (args) {
-        args = flattenMusicLangListsIn(args);
-        let duration = 0;
-        let e = null;
-        if(args.some(function(arg) {
-            if(!isNote(arg)) {
-                e = arg;
-                return true;
-            }
-            duration += arg.duration;
-            return false;
-        })) {
-            return new Error("All arguments to note-seq must be a note.", e);
-        }
-        return new PureNote(function(t) {
-            let got_note = getNoteInSeq(args, t);
-            if (got_note[0] >= args.length) return [0];
-            return args[got_note[0]].freq_of_t(t - got_note[1]);
-        }, duration, function(t) {
-            let got_note = getNoteInSeq(args, t);
-            if (got_note[0] >= args.length) return [0];
-            return args[got_note[0]].ampl_of_t(t - got_note[1]);
-        });
+        return repeatCallable([1, ...args]);
     }, "Creates a sequence of notes but does not play them", "(note-seq [notes...])", ["notes"]),
+    "repeat": new Callable(repeatCallable, "Sets a phrase to be repeated as many times as specified. (`(repeat 1)` is the same as `(note-seq)`.", "(repeat [n] [notes...])", ["note", "notes"]),
     "pitch-at": new Callable(function (args) {
         if (args.length != 2)
             return new Error("pitch-at needs 2 arguments, not the " + args.length + " provided", args);
