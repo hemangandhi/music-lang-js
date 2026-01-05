@@ -44,7 +44,7 @@ let demos = {
                     (note (pitch-at D 3) 1)
                     (note (pitch-at E 3) 1)
                     (note-seq (note (pitch-at D 3) 2)
-                              (note (pitch-at G 3) 2)))))))
+                              (note (pitch-at G 3) 3)))))))
 `,
     "Happy Birthday": `
 (play (with-bpm 180 (with-known-timbre piano
@@ -73,7 +73,7 @@ let demos = {
   (note (pitch-at E 3) 1)
   (note (pitch-at C 3) 1)
   (note (pitch-at D 3) 1)
-  (note (pitch-at C 3) 2))))
+  (note (pitch-at C 3) 3))))
 `,
     "Vibrato Glissando": `
 (play (vibrato 5 10
@@ -123,6 +123,6 @@ let demos = {
           (note (pitch-at E 2) 0.5)
           (note (pitch-at D 2) 0.5)
           (note (pitch-at C 2) 0.5)
-          (note (pitch-at D 2) 1.5))))))
+          (note (pitch-at D 2) 2))))))
 `
 }
