@@ -125,5 +125,32 @@ let demos = {
           (note (pitch-at D 2) 0.5)
           (note (pitch-at C 2) 0.5)
           (note (pitch-at D 2) 2))))))
-`
+`,
+    "Gran Vals (NOKIA)": `
+(play (with-bpm 180
+    (with-known-timbre guitar
+        (note-seq
+            (chord
+                (note-seq
+                    (note (pitch-at E 4) 0.6) (rest 0.4))
+                (note-seq
+                    (rest 0.4) (note (pitch-at D 4) 0.6)))
+            (note (pitch-at F# 3) 1)
+            (note (pitch-at G# 3) 1)
+            (chord
+                (note-seq
+                    (note (pitch-at C# 4) 0.6) (rest 0.4))
+                (note-seq
+                    (rest 0.4) (note (pitch-at B 4) 0.6)))
+            (note (pitch-at D 3) 1)
+            (note (pitch-at E 3) 1)
+            (chord
+                (note-seq
+                    (note (pitch-at B 4) 0.6) (rest 0.4))
+                (note-seq
+                    (rest 0.4) (note (pitch-at A 4) 0.6)))
+            (note (pitch-at C# 3) 1)
+            (note (pitch-at E 3) 1)
+            (note (pitch-at A 4) 2)))))
+`,
 }

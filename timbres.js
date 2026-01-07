@@ -51,4 +51,15 @@ const known_timbres = {
         'amplitudes': [0.3, 0.1, 0.1, 0.1, 0.1, 0.01, 0.1, 0.01, 0.05, 0.01, 0.01, 0.01],
         'adsr': {'a_vol': 1.2, 'd_start': 0.2, 's_start': 0.3, 's_vol': 1, 'r_start': 0.5}
     },
+    'guitar': {
+        'harmonics': [
+              1,
+              2,
+              3,
+              4,
+              8
+        ],
+        'amplitudes': [2, 0.05, 0.05, 0.05, 0.001],
+        'adsr': {'a_vol': 1.2, 'd_start': 0.01, 's_start': 0.35, 's_vol': 0.6, 'r_start': 0.7}
+    },
 };
