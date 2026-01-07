@@ -258,7 +258,7 @@ const global_variables = {
             else tone_num++;
         }
         return 440 * Math.pow(2, tone_num / 12.0 + octave - 4);
-    }, "Gets the pitch for a given note. The tones are letters from A through G with # for sharps and b for flats (since key signatures are not used double flats, double sharps, or \"naturals\". An octave must be specified, with (pitch-at C 3) being middle C", "(pitch-at [tone] [octave])", ["frequency"]),
+    }, "Gets the pitch for a given note. The tones are letters from A through G with # for sharps and b for flats (since key signatures are not used double flats, double sharps, or \"naturals\" are not handled by this function). An octave must be specified, with (pitch-at C 3) being middle C", "(pitch-at [tone] [octave])", ["frequency"]),
     "error": new Callable(function (args) {
         if (args.length != 2) return new Error("Error only takes one argument (did you put spaces in the message?)", args);
         return new Error(args[0], args[1]);
@@ -411,7 +411,7 @@ const global_variables = {
     }, "A linear frequency slide from the first pitch to the second", "(glissando [frequency] [frequency] [duration])", ["note", "notes"]),
     "vibrato": new Callable(function (args) {
         if (args.length != 3)
-            return new Error("note needs 3 arguments, not the " + args.length + " provided", args);
+            return new Error("vibrato needs 3 arguments, not the " + args.length + " provided", args);
         let vampl = parseFloat(args[0]);
         let vpeaks = parseFloat(args[1]);
         let base_note = args[2];

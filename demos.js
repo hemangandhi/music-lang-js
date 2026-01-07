@@ -105,7 +105,7 @@ let demos = {
 (play (with-bpm 80
   (with-known-overtones euphonium
     (map (fn (v n)
-             (vibrato 0.01 2 n))
+             (vibrato 0.01 1 n))
       (map (fn (adsr-bit n) (with-adsr 1.2 0.2 0.3 1 0.5 n))
           (note (pitch-at C 2) 1)
           (rest 0.25)
