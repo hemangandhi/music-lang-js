@@ -11,11 +11,12 @@ function Error(msg, trigger) {
     }
 }
 
-function Result() {
+function Result(ctx, duration) {
     this.apply = function (args) {
         return new Error("Calling uncallable 'result'", args);
     };
     this.type = "Result";
+    this.ctx = ctx;
 }
 
 function Callable(delegate, docs, snippet, targets) {

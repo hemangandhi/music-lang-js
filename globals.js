@@ -182,10 +182,12 @@ const global_variables = {
             source.buffer = snd_buffer;
             source.connect(audio_ctx.destination);
             source.start();
-            source.stop(total_time * 1.1); // TODO: figure out why?
-            console.log("done playing. Time: " + total_time);
+            setTimeout(() => {
+                source.stop();
+                console.log("done playing. Time: " + total_time + " seconds");
+            }, total_time * 1000);
         });
-        return new Result();
+        return new Result(audio_ctx, total_time);
     }, "Plays a sequence of notes", "(play [notes...])"),
     "note": new Callable(function (args) {
         if (args.length != 2)
