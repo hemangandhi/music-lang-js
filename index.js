@@ -209,7 +209,7 @@ function saveEditorTxt(editor_txtarea_id, saved_option) {
 
 function loadDemos(selector_id, editor_txtarea_id) {
     let selector = document.getElementById(selector_id);
-    for(demo in demos) {
+    for(let demo in demos) {
         let option = document.createElement('option');
         option.innerText = demo;
         option.value = demo.replaceAll(' ', '-');
@@ -219,6 +219,7 @@ function loadDemos(selector_id, editor_txtarea_id) {
     selector.addEventListener("change", function(evt) {
         if (selector.value !== "clear") {
             document.getElementById(editor_txtarea_id).value = demos[selector.value.replaceAll('-', ' ')];
+            window.history.pushState(selector.value, "", "?" + encodeURI(selector.value));
             return;
         }
         let maybe_saved_code = document.cookie.split(';').filter((kv) => kv.startsWith('saved_music_lang='));
@@ -226,5 +227,18 @@ function loadDemos(selector_id, editor_txtarea_id) {
         if (maybe_saved_code.length > 0) {
             document.getElementById(editor_txtarea_id).value = maybe_saved_code[0].split('=')[1];
         }
+    });
+
+    const query = decodeURI(document.location.search.slice(1));
+    const query_demo = query.replaceAll('-', ' ');
+    const demo = demos[query_demo];
+    if (demo) {
+        selector.value = query;
+        document.getElementById(editor_txtarea_id).value = demo;
+    }
+
+    window.addEventListener("popstate", function(e) {
+        document.getElementById(editor_txtarea_id).value = demos[e.state.replaceAll('-', ' ')];
+        selector.value = e.state;
     });
 }
